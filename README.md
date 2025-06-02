@@ -1,4 +1,4 @@
-SafeSurf: Defender Against Darknet Threats
+#SafeSurf: Defender Against Darknet Threats
 Authors: Mohammad Jihad Obaidat, Ibrahim Ahmad Al-Syouf, Yahia Faek Awawdeh, Anas Eid Masa’deh
 Supervisor: Dr. Qasem Abu Al-Haija
 Institution: Jordan University of Science and Technology (JUST)

@@ -77,6 +77,8 @@ Dr. Qasem Abu Al-Haija (Supervisor) https://www.linkedin.com/in/qasem-abu-al-hai
 
 Mohammad Obaidat: https://www.linkedin.com/in/mobaidat75/
 
+Ibrahim Al-Syouf https://www.linkedin.com/in/ibrahim-al-syouf-145371308/
+
 Anas Masa'deh: https://www.linkedin.com/in/anas-masadeh-58a212288/
 
 Yahea Awawdeh  https://www.linkedin.com/in/yahea-awawdeh-039865295/

@@ -76,6 +76,6 @@ For more information or collaboration:
 Mohammad Obaidat: https://www.linkedin.com/in/mobaidat75/
 
 Anas Masa'deh: https://www.linkedin.com/in/anas-masadeh-58a212288/ 
-
+Yahea Awawdeh  https://www.linkedin.com/in/yahea-awawdeh-039865295/
 Dr. Qasem Abu Al-Haija (Supervisor) https://www.linkedin.com/in/qasem-abu-al-haija-190a123b/
 

@@ -84,7 +84,7 @@ SafeSurf is an advanced network security monitoring system specifically designed
 - SQLite database
 - Git
 
-## 🚀 Installation
+## Installation
 
 1. Clone the repository:
 ```bash
@@ -128,7 +128,7 @@ flask db migrate
 flask db upgrade
 ```
 
-## ⚙️ Configuration
+##  Configuration
 
 ### Redis Configuration
 Update the Redis connection details in `app.py`:
@@ -149,7 +149,7 @@ aws_secret_key = 'your-secret-key'
 topic_arn = 'your-sns-topic-arn'
 ```
 
-## 🏃‍♂️ Running the Application
+##  Running the Application
 
 1. Start the application:
 ```bash

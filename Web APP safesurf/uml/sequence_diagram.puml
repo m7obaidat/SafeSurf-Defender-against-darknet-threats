@@ -1,0 +1,50 @@
+@startuml
+' Sequence Diagram for SafeSurf
+
+actor User
+participant "Web Interface" as UI
+participant "Flask App" as Flask
+participant "RedisHandler" as Redis
+participant "ML Model" as ML
+participant "AWS SNS" as SNS
+
+== Traffic Monitoring ==
+User -> UI: Access Dashboard
+UI -> Flask: Request Traffic Stats
+Flask -> Redis: Get Current Stats
+Redis --> Flask: Return Stats
+Flask --> UI: Return Stats
+UI --> User: Display Stats
+Redis -> Redis: Start PubSub Listener
+
+== Traffic Analysis ==
+Redis -> Flask: Receive Traffic Flow
+Flask -> ML: Analyze Flow Data
+ML --> Flask: Return Classification
+Flask -> Redis: Update Statistics
+UI <-- Flask: Real-time Update
+
+== Alert Generation ==
+Flask -> Flask: Detect Suspicious Activity
+Flask -> SNS: Send Alert
+SNS --> User: Email Notification
+
+== Report Generation ==
+User -> UI: Request Report
+UI -> Flask: Generate Report
+Flask -> Redis: Fetch Statistics
+Redis --> Flask: Return Data
+Flask -> ML: Generate PDF
+ML --> Flask: Return PDF
+Flask --> UI: Return Report
+UI --> User: Download Report
+
+' Notes
+note right of Redis
+  Real-time monitoring includes:
+  - Traffic analysis
+  - Threat detection
+  - Statistics updates
+end note
+
+@enduml 

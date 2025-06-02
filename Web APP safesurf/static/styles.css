@@ -1,0 +1,142 @@
+:root {
+    --dark: #000000;
+    --dark-800: #191C24;
+    --dark-700: #222222;
+    --primary: #EB1616;
+    --light: #6C7293;
+    --text-light: #FFFFFF;
+    --danger: #EB1616;
+}
+
+body {
+    background-color: var(--dark) !important;
+    color: var(--text-light);
+    min-height: 100vh;
+}
+
+    /* Hide sidebar on login page */
+    body.auth-page .sidebar {
+        display: none;
+        border: 2px solid #EB1616; /* 2px width, solid style, and red color */
+        border-radius: 5px;
+    }
+
+    body.auth-page .content {
+        margin-left: 0 !important;
+        padding: 0 !important;
+    }
+
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 250px;
+    padding: 1rem;
+    background: var(--dark-700);
+    transition: 0.5s;
+}
+
+.content {
+    margin-left: 250px;
+    padding: 1.5rem;
+    min-height: 100vh;
+}
+
+.navbar {
+    background-color: var(--dark-700) !important;
+}
+
+.card {
+    background-color: var(--dark-700);
+    border: none;
+    border-radius: 5px;
+    color: var(--text-light);
+}
+
+.nav-link {
+    color: var(--text-light) !important;
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+}
+
+    .nav-link:hover,
+    .nav-link.active {
+        background-color: var(--dark-600);
+        color: var(--primary);
+    }
+
+.navbar-brand {
+    color: var(--primary) !important;
+    font-weight: bold;
+}
+
+.btn-primary {
+    background-color: var(--primary);
+    border-color: var(--primary);
+}
+
+.table {
+    color: var(--text-light);
+}
+
+.dropdown-menu {
+    background-color: var(--dark-700);
+    border: 1px solid var(--dark-600);
+}
+
+.dropdown-item {
+    color: var(--text-light);
+}
+
+    .dropdown-item:hover {
+        background-color: var(--dark-600);
+        color: var(--primary);
+    }
+
+.card-title, .card-header {
+    color: var(--text-light);
+}
+
+strong {
+    color: var(--text-light);
+}
+
+.bg-dark-800 {
+    background-color: var(--dark-800);
+}
+
+.form-control {
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    background-color: var(--dark-700) !important;
+    border: none;
+    color: white !important;
+}
+
+    .form-control:focus {
+        background-color: var(--dark-700);
+        border-color: var(--danger);
+        box-shadow: none;
+    }
+
+.form-check-input:checked {
+    background-color: var(--danger);
+    border-color: var (--danger);
+}
+
+.btn-danger {
+    background-color: var(--danger);
+    border-color: var(--danger);
+}
+
+    .btn-danger:hover {
+        background-color: #c91010;
+        border-color: #c91010;
+    }
+
+.auth-card {
+    max-width: 400px;
+    width: 90%;
+    margin: auto;
+}

@@ -1,0 +1,369 @@
+{% extends "base.html" %}
+
+{% block title %}My Profile{% endblock %}
+
+{% block content %}
+<style>
+    .profile-card {
+        background: linear-gradient(145deg, #1a1a1a, #2a2a2a);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    }
+
+    .profile-header {
+        background: linear-gradient(45deg, #dc3545, #ff4d5a);
+        padding: 2rem;
+        border-radius: 0.5rem 0.5rem 0 0;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .profile-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 100%);
+    }
+
+    .profile-avatar {
+        width: 150px;
+        height: 150px;
+        background: linear-gradient(45deg, #dc3545, #ff4d5a);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 4rem;
+        color: white;
+        border: 5px solid rgba(255, 255, 255, 0.2);
+        margin: 0 auto;
+        box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+    }
+
+    .stat-card {
+        background: rgba(33, 37, 41, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        transition: transform 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .edit-profile-btn {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        backdrop-filter: blur(5px);
+    }
+
+    .edit-profile-btn:hover {
+        background: rgba(255, 255, 255, 0.3);
+    }
+
+    /* Password Requirements Styling */
+    #passwordRequirements {
+        background: rgba(33, 37, 41, 0.9);
+        border-radius: 8px;
+        padding: 15px;
+        margin-top: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+    }
+
+    #passwordRequirements ul {
+        margin: 0;
+        padding: 0;
+    }
+
+    #passwordRequirements li {
+        margin: 8px 0;
+        padding: 8px 12px;
+        border-radius: 4px;
+        transition: all 0.3s ease;
+        background: rgba(255, 255, 255, 0.05);
+        display: flex;
+        align-items: center;
+    }
+
+    #passwordRequirements li i {
+        margin-right: 8px;
+        font-size: 14px;
+        width: 20px;
+        text-align: center;
+    }
+
+    #passwordRequirements li.text-success {
+        background: rgba(40, 167, 69, 0.2);
+        border-left: 3px solid #28a745;
+    }
+
+    #passwordRequirements li.text-danger {
+        background: rgba(220, 53, 69, 0.2);
+        border-left: 3px solid #dc3545;
+    }
+
+    #passwordRequirements li.text-success i {
+        color: #28a745;
+    }
+
+    #passwordRequirements li.text-danger i {
+        color: #dc3545;
+    }
+
+    .password-strength-meter {
+        height: 4px;
+        background: rgba(255, 255, 255, 0.1);
+        margin-top: 10px;
+        border-radius: 2px;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .password-strength-meter div {
+        height: 100%;
+        width: 0;
+        transition: all 0.3s ease;
+        border-radius: 2px;
+    }
+</style>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card profile-card">
+                <!-- Profile Header -->
+                <div class="profile-header text-center position-relative">
+                    <button class="btn btn-light edit-profile-btn" onclick="openEditProfileModal()">
+                        <i class="fas fa-edit"></i> Edit Profile
+                    </button>
+                    <div class="profile-avatar mb-3">
+                        {{ current_user.username[0].upper() }}
+                    </div>
+                    <h2 class="text-white mb-1">{{ current_user.username }}</h2>
+                    <p class="text-white-50 mb-0">{{ current_user.email }}</p>
+                    <p class="mb-0 mt-2">
+                        <span class="badge bg-light text-dark">
+                            {% if current_user.is_admin %}Administrator{% else %}User{% endif %}
+                        </span>
+                    </p>
+                </div>
+
+                <!-- Profile Content -->
+                <div class="card-body">
+                    <div class="row g-4">
+                        <!-- Stats Cards -->
+                        <div class="col-md-4">
+                            <div class="card stat-card h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-shield-alt fa-2x text-danger mb-3"></i>
+                                    <h5 class="card-title">Security Status</h5>
+                                    <p class="card-text text-success">
+                                        <i class="fas fa-check-circle"></i> Account Protected
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card stat-card h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-clock fa-2x text-danger mb-3"></i>
+                                    <h5 class="card-title">Last Login</h5>
+                                    <p class="card-text">
+                                        {% if current_user.last_login %}
+                                            {{ current_user.last_login.strftime('%Y-%m-%d %H:%M:%S') }}
+                                        {% else %}
+                                            Not available
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card stat-card h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-user-clock fa-2x text-danger mb-3"></i>
+                                    <h5 class="card-title">Account Created</h5>
+                                    <p class="card-text">
+                                        {% if current_user.created_at %}
+                                            {{ current_user.created_at.strftime('%Y-%m-%d %H:%M:%S') }}
+                                        {% else %}
+                                            Not available
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Profile Modal -->
+<div class="modal fade" id="editProfileModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title text-white">Edit Profile</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editProfileForm">
+                    <div class="mb-3">
+                        <label class="form-label text-white">Username</label>
+                        <input type="text" class="form-control bg-dark text-white" id="editUsername" 
+                               value="{{ current_user.username }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-white">Email</label>
+                        <input type="email" class="form-control bg-dark text-white" id="editEmail" 
+                               value="{{ current_user.email }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-white">New Password (leave blank to keep current)</label>
+                        <input type="password" class="form-control bg-dark text-white" id="editPassword" oninput="validatePassword(this.value)">
+                        <div id="passwordRequirements" class="mt-2" style="display: none;">
+                            <p class="text-white-50 mb-2">Password must contain:</p>
+                            <ul class="list-unstyled">
+                                <li id="lengthCheck" class="text-danger">
+                                    <i class="fas fa-times-circle"></i> At least 8 characters
+                                </li>
+                                <li id="uppercaseCheck" class="text-danger">
+                                    <i class="fas fa-times-circle"></i> One uppercase letter
+                                </li>
+                                <li id="lowercaseCheck" class="text-danger">
+                                    <i class="fas fa-times-circle"></i> One lowercase letter
+                                </li>
+                                <li id="numberCheck" class="text-danger">
+                                    <i class="fas fa-times-circle"></i> One number
+                                </li>
+                                <li id="specialCheck" class="text-danger">
+                                    <i class="fas fa-times-circle"></i> One special character
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-secondary">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="saveProfileChanges()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+let editProfileModal;
+
+document.addEventListener('DOMContentLoaded', function() {
+    editProfileModal = new bootstrap.Modal(document.getElementById('editProfileModal'));
+});
+
+function openEditProfileModal() {
+    editProfileModal.show();
+}
+
+function showAlert(message, type = 'success') {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.querySelector('.container-fluid').insertBefore(alertDiv, document.querySelector('.row'));
+    
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 3000);
+}
+
+function validatePassword(password) {
+    const requirements = {
+        length: password.length >= 8,
+        uppercase: /[A-Z]/.test(password),
+        lowercase: /[a-z]/.test(password),
+        number: /[0-9]/.test(password),
+        special: /[!@#$%^&*()_+\-=\[\]{};:,.<>?]/.test(password)
+    };
+
+    // Show password requirements if there's any input
+    const requirementsDiv = document.getElementById('passwordRequirements');
+    requirementsDiv.style.display = password ? 'block' : 'none';
+
+    // Update each requirement check
+    Object.keys(requirements).forEach(req => {
+        const element = document.getElementById(req + 'Check');
+        if (requirements[req]) {
+            element.className = 'text-success';
+            element.innerHTML = '<i class="fas fa-check-circle"></i> ' + element.innerHTML.split('</i> ')[1];
+        } else {
+            element.className = 'text-danger';
+            element.innerHTML = '<i class="fas fa-times-circle"></i> ' + element.innerHTML.split('</i> ')[1];
+        }
+    });
+
+    // Enable/disable update button based on password validity
+    const updateButton = document.getElementById('updateBtn');
+    if (password) {
+        // If password field is not empty, all requirements must be met
+        const isValid = Object.values(requirements).every(req => req);
+        updateButton.disabled = !isValid;
+    } else {
+        // If password field is empty, it's optional, so enable the button
+        updateButton.disabled = false;
+    }
+
+    return Object.values(requirements).every(req => req);
+}
+
+async function saveProfileChanges() {
+    const password = document.getElementById('editPassword').value;
+    
+    // If password is provided, validate it
+    if (password && !validatePassword(password)) {
+        showAlert('Please ensure your password meets all requirements', 'warning');
+        return;
+    }
+
+    const data = {
+        username: document.getElementById('editUsername').value,
+        email: document.getElementById('editEmail').value,
+        password: password
+    };
+
+    try {
+        const response = await fetch('/update_profile', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            editProfileModal.hide();
+            showAlert(result.message);
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            showAlert(result.message, 'danger');
+        }
+    } catch (error) {
+        showAlert('An error occurred while updating profile', 'danger');
+    }
+}
+</script>
+{% endblock %} 

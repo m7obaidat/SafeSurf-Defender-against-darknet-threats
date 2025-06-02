@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{% endblock %} - Admin Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --dark: #000000;
+            --dark-800: #191C24;
+            --dark-700: #222222;
+            --dark-600: #2A2F45;
+            --primary: #EB1616;
+            --light: #6C7293;
+            --text-light: #FFFFFF;
+            --danger: #EB1616;
+            --gradient-1: linear-gradient(135deg, rgba(235, 22, 22, 0.05), transparent);
+            --gradient-2: linear-gradient(45deg, rgba(235, 22, 22, 0.03), transparent);
+        }
+
+        body {
+            background: var(--dark);
+            color: var(--text-light);
+            min-height: 100vh;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        /* Hide sidebar on login page */
+        body.auth-page .sidebar {
+            display: none;
+            border: 2px solid #EB1616;
+            border-radius: 5px;
+        }
+
+        body.auth-page .content {
+            margin-left: 0 !important;
+            padding: 0 !important;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: 250px;
+            padding: 1rem;
+            background: var(--dark-700);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .sidebar.collapsed {
+            margin-left: -250px;
+        }
+
+        .content {
+            margin-left: 250px;
+            padding: 1.5rem;
+            min-height: 100vh;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            background: var(--dark);
+        }
+
+        .content::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: -2;
+            background: 
+                radial-gradient(circle at 0% 0%, rgba(235, 22, 22, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 100% 100%, rgba(235, 22, 22, 0.03) 0%, transparent 50%);
+            opacity: 0.7;
+        }
+
+        .content.expanded {
+            margin-left: 0;
+        }
+
+        .toggle-sidebar-btn {
+            position: fixed;
+            left: 260px;
+            top: 20px;
+            z-index: 1001;
+            transition: all 0.3s ease;
+            background: var(--dark-700);
+            border: 1px solid var(--primary);
+            color: var(--text-light);
+            padding: 0.5rem;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .toggle-sidebar-btn.collapsed {
+            left: 10px;
+        }
+
+        .toggle-sidebar-btn:hover {
+            background: var(--primary);
+            color: var(--text-light);
+        }
+
+        .navbar {
+            background-color: var(--dark-700) !important;
+        }
+
+        .card {
+            background-color: var(--dark-700);
+            border: none;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            position: relative;
+            overflow: hidden;
+            color: var(--text-light);
+        }
+
+        .card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--primary), transparent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .card:hover::after {
+            opacity: 1;
+        }
+
+        .nav-link {
+            position: relative;
+            transition: all 0.3s ease;
+            border-radius: 6px;
+            margin-bottom: 5px;
+            color: var(--text-light) !important;
+            padding: 0.5rem 1rem;
+        }
+
+        .nav-link::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 3px;
+            background: var(--primary);
+            transform: scaleY(0);
+            transition: transform 0.2s ease;
+            border-radius: 0 3px 3px 0;
+        }
+
+        .nav-link:hover::before,
+        .nav-link.active::before {
+            transform: scaleY(1);
+        }
+
+        .nav-link:hover {
+            background: var(--dark-600);
+            padding-left: 1.5rem;
+        }
+
+        .navbar-brand {
+            color: var(--primary) !important;
+            font-weight: bold;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .table {
+            color: var(--text-light);
+        }
+
+        .dropdown-menu {
+            background-color: var(--dark-700);
+            border: 1px solid var(--dark-600);
+        }
+
+        .dropdown-item {
+            color: var(--text-light);
+        }
+
+        .dropdown-item:hover {
+            background-color: var(--dark-600);
+            color: var(--primary);
+        }
+
+        .card-title, .card-header {
+            color: var(--text-light);
+        }
+
+        strong {
+            color: var(--text-light);
+        }
+
+        .bg-dark-800 {
+            background-color: var(--dark-800);
+        }
+
+        .form-control {
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            background-color: var(--dark-700) !important;
+            border: none;
+            color: white !important;
+        }
+
+        .form-control:focus {
+            background-color: var(--dark-700);
+            border-color: var(--danger);
+            box-shadow: none;
+        }
+
+        .form-check-input:checked {
+            background-color: var(--danger);
+            border-color: var(--danger);
+        }
+
+        .btn-danger {
+            background-color: var(--danger);
+            border-color: var(--danger);
+        }
+
+        .btn-danger:hover {
+            background-color: #c91010;
+            border-color: #c91010;
+        }
+
+        .auth-card {
+            max-width: 400px;
+            width: 90%;
+            margin: auto;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                margin-left: -250px;
+            }
+            .sidebar.active {
+                margin-left: 0;
+            }
+            .content {
+                margin-left: 0;
+            }
+            .toggle-sidebar-btn {
+                left: 10px;
+            }
+            .toggle-sidebar-btn.active {
+                left: 260px;
+            }
+        }
+
+        /* Refined page-specific animations */
+        .log-bg::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: -1;
+            background: linear-gradient(135deg, 
+                var(--dark) 25%, 
+                var(--dark-800) 25%, 
+                var(--dark-800) 50%, 
+                var(--dark) 50%, 
+                var(--dark) 75%, 
+                var(--dark-800) 75%, 
+                var(--dark-800));
+            background-size: 100px 100px;
+            animation: slideBackground 30s linear infinite;
+            opacity: 0.1;
+        }
+
+        .send-mail-bg::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: -1;
+            background: 
+                repeating-linear-gradient(
+                    45deg,
+                    transparent,
+                    transparent 20px,
+                    rgba(235, 22, 22, 0.03) 20px,
+                    rgba(235, 22, 22, 0.03) 40px
+                );
+            animation: gradientShift 15s ease infinite;
+            opacity: 0.1;
+        }
+
+        .whitelist-bg::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: -1;
+            background: 
+                linear-gradient(135deg, var(--dark-800) 25%, transparent 25%) -20px 0,
+                linear-gradient(225deg, var(--dark-800) 25%, transparent 25%) -20px 0,
+                linear-gradient(315deg, var(--dark-800) 25%, transparent 25%),
+                linear-gradient(45deg, var(--dark-800) 25%, transparent 25%);
+            background-size: 50px 50px;
+            animation: securityPattern 25s linear infinite;
+            opacity: 0.08;
+        }
+
+        /* Enhanced animations */
+        @keyframes slideBackground {
+            0% {
+                background-position: 0 0;
+            }
+            100% {
+                background-position: 100px 100px;
+            }
+        }
+
+        @keyframes gradientShift {
+            0% {
+                transform: translateX(0) translateY(0);
+            }
+            50% {
+                transform: translateX(20px) translateY(10px);
+            }
+            100% {
+                transform: translateX(0) translateY(0);
+            }
+        }
+
+        @keyframes securityPattern {
+            0% {
+                background-position: 0 0;
+            }
+            100% {
+                background-position: 50px 50px;
+            }
+        }
+
+        /* Professional Message Box Styles */
+        .message-box {
+            position: relative;
+            padding: 16px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            background: var(--dark-700);
+            border-left: 4px solid;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .message-box.info {
+            border-left-color: #0dcaf0;
+        }
+
+        .message-box.success {
+            border-left-color: #198754;
+        }
+
+        .message-box.warning {
+            border-left-color: #ffc107;
+        }
+
+        .message-box.error {
+            border-left-color: var(--danger);
+        }
+
+        .message-box .icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .message-box.info .icon {
+            color: #0dcaf0;
+        }
+
+        .message-box.success .icon {
+            color: #198754;
+        }
+
+        .message-box.warning .icon {
+            color: #ffc107;
+        }
+
+        .message-box.error .icon {
+            color: var(--danger);
+        }
+
+        .message-box .message-content {
+            flex-grow: 1;
+            font-size: 0.95rem;
+            color: var(--text-light);
+        }
+
+        .message-box .close-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-light);
+            opacity: 0.5;
+            cursor: pointer;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.2s ease;
+        }
+
+        .message-box .close-btn:hover {
+            opacity: 1;
+        }
+
+        .messages-container {
+            position: relative;
+            z-index: 1000;
+        }
+
+        /* Message box hover effect */
+        .message-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .message-box:hover::before {
+            opacity: 1;
+        }
+
+        /* Professional Popup Styles */
+        .popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.75);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .popup-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .popup-container {
+            background: var(--dark-700);
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 400px;
+            width: 90%;
+            position: relative;
+            transform: translateY(-20px) scale(0.95);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(235, 22, 22, 0.2);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .popup-overlay.active .popup-container {
+            transform: translateY(0) scale(1);
+        }
+
+        .popup-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            gap: 12px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .popup-icon {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            flex-shrink: 0;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .popup-icon i {
+            font-size: 1.2rem;
+        }
+
+        .popup-icon.info { 
+            color: #0dcaf0; 
+            background: rgba(13, 202, 240, 0.1);
+        }
+        .popup-icon.success { 
+            color: #198754; 
+            background: rgba(25, 135, 84, 0.1);
+        }
+        .popup-icon.warning { 
+            color: #ffc107; 
+            background: rgba(255, 193, 7, 0.1);
+        }
+        .popup-icon.error { 
+            color: var(--danger); 
+            background: rgba(235, 22, 22, 0.1);
+        }
+
+        .popup-title {
+            font-size: 1.25rem;
+            color: var(--text-light);
+            margin: 0;
+            flex-grow: 1;
+            font-weight: 500;
+        }
+
+        .popup-content {
+            color: var(--text-light);
+            opacity: 0.9;
+            line-height: 1.6;
+            margin-bottom: 24px;
+            font-size: 0.95rem;
+        }
+
+        .popup-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        .popup-btn {
+            padding: 8px 20px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+            background: var(--dark-600);
+            color: var(--text-light);
+            min-width: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .popup-btn:hover {
+            background: var(--dark-800);
+            transform: translateY(-1px);
+        }
+
+        .popup-btn.primary {
+            background: var(--primary);
+        }
+
+        .popup-btn.primary:hover {
+            background: #d11414;
+            box-shadow: 0 4px 12px rgba(235, 22, 22, 0.25);
+        }
+
+        .popup-btn i {
+            font-size: 0.9rem;
+        }
+
+        /* Popup animations */
+        @keyframes popupFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .popup-container {
+            animation: popupFadeIn 0.3s ease-out;
+        }
+
+        /* Close button for popup */
+        .popup-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: var(--text-light);
+            opacity: 0.5;
+            cursor: pointer;
+            padding: 4px;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+        }
+
+        .popup-close:hover {
+            opacity: 1;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Loading state for popup buttons */
+        .popup-btn.loading {
+            position: relative;
+            pointer-events: none;
+            opacity: 0.8;
+        }
+
+        .popup-btn.loading i {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+    </style>
+</head>
+<body class="{% if request.endpoint in ['login', 'register'] %}auth-page{% endif %}">
+    <!-- Sidebar Toggle Button -->
+    {% if not request.endpoint in ['login', 'register'] %}
+    <button class="toggle-sidebar-btn" onclick="toggleSidebar()" title="Toggle Sidebar">
+        <i class="fas fa-bars"></i>
+    </button>
+    {% endif %}
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <a href="{{ url_for('index') }}" class="navbar-brand d-flex align-items-center mb-4">
+            <h3 class="mb-0">SafeSurf</h3>
+        </a>
+        <nav class="nav flex-column">
+            <a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">
+                <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+            </a>
+            {% if current_user.is_admin %}
+            <a class="nav-link {% if request.endpoint == 'admin' %}active{% endif %}" href="{{ url_for('admin') }}">
+                <i class="fas fa-user-shield me-2"></i> Admin Panel
+            </a>
+            {% endif %}
+            <a class="nav-link {% if request.endpoint == 'log' %}active{% endif %}" href="{{ url_for('log') }}">
+                <i class="fas fa-file-alt me-2"></i> Log
+            </a>
+            {% if current_user.is_admin %}
+            <a class="nav-link {% if request.endpoint == 'whitelist' %}active{% endif %}" href="{{ url_for('whitelist') }}">
+                <i class="fas fa-check-circle me-2"></i> Whitelist
+            </a>
+            {% endif %}
+            {% if current_user.is_admin %}
+            <a class="nav-link {% if request.endpoint == 'blacklist' %}active{% endif %}" href="{{ url_for('view_blacklist') }}">
+                <i class="fas fa-ban me-2"></i> Blacklist
+            </a>
+            {% endif %}
+            <a class="nav-link {% if request.endpoint == 'send_mail' %}active{% endif %}" href="{{ url_for('send_mail') }}">
+                <i class="fas fa-paper-plane me-2"></i> Send Mail
+            </a>
+            {% if current_user.is_admin %}
+            <a class="nav-link {% if request.endpoint == 'ml_dashboard' %}active{% endif %}" href="{{ url_for('ml_dashboard') }}">
+                <i class="fas fa-brain me-2"></i> ML Dashboard
+            </a>
+            {% endif %}
+        </nav>
+    </div>
+
+    <!-- Content -->
+    <div class="content {% if request.endpoint == 'log' %}log-bg{% elif request.endpoint == 'send_mail' %}send-mail-bg{% elif request.endpoint == 'whitelist' %}whitelist-bg{% endif %}">
+        <div class="animated-bg"></div>
+        <!-- Navbar -->
+        <nav class="navbar navbar-expand-lg mb-4">
+            <div class="container-fluid">
+                <div class="ms-auto">
+                    <div class="dropdown">
+                        <button class="btn btn-link nav-link dropdown-toggle text-white" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="text-decoration: none;">
+                            <i class="fas fa-user-circle me-2"></i>{{ current_user.username }}
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown" style="min-width: 200px;">
+                            <li><a class="dropdown-item text-white" href="{{ url_for('profile') }}"><i class="fas fa-user me-2"></i>My Profile</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-white" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Professional Message Boxes -->
+        {% if request.endpoint not in ['login', 'register'] %}
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="messages-container">
+            {% for category, message in messages %}
+            {% set message_type = category if category != 'message' else 'info' %}
+            <div class="message-box {{ message_type }} fade show" role="alert">
+                <div class="icon">
+                    {% if message_type == 'info' %}
+                    <i class="fas fa-info-circle"></i>
+                    {% elif message_type == 'success' %}
+                    <i class="fas fa-check-circle"></i>
+                    {% elif message_type == 'warning' %}
+                    <i class="fas fa-exclamation-circle"></i>
+                    {% elif message_type == 'error' %}
+                    <i class="fas fa-times-circle"></i>
+                    {% endif %}
+                </div>
+                <div class="message-content">{{ message }}</div>
+                <button type="button" class="close-btn" onclick="this.parentElement.remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+        {% endif %}
+
+        <!-- Main Content -->
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- Enhanced Popup Template -->
+    <div id="popupOverlay" class="popup-overlay">
+        <div class="popup-container">
+            <button type="button" class="popup-close" onclick="closePopup()">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="popup-header">
+                <div class="popup-icon">
+                    <i class="fas fa-info-circle"></i>
+                </div>
+                <h3 class="popup-title">Notice</h3>
+            </div>
+            <div class="popup-content"></div>
+            <div class="popup-actions">
+                <button class="popup-btn" onclick="closePopup()">
+                    <i class="fas fa-times"></i>
+                    Cancel
+                </button>
+                <button class="popup-btn primary" onclick="confirmPopup()">
+                    <i class="fas fa-check"></i>
+                    OK
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Get the sidebar state from localStorage
+        const sidebarState = localStorage.getItem('sidebarCollapsed');
+        const sidebar = document.querySelector('.sidebar');
+        const content = document.querySelector('.content');
+        const toggleBtn = document.querySelector('.toggle-sidebar-btn');
+
+        // Apply the saved state on page load
+        if (sidebarState === 'true') {
+            sidebar.classList.add('collapsed');
+            content.classList.add('expanded');
+            toggleBtn.classList.add('collapsed');
+        }
+
+        function toggleSidebar() {
+            sidebar.classList.toggle('collapsed');
+            content.classList.toggle('expanded');
+            toggleBtn.classList.toggle('collapsed');
+            
+            // Save the state to localStorage
+            localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+        }
+
+        // Handle responsive behavior
+        function checkWidth() {
+            if (window.innerWidth <= 768) {
+                sidebar.classList.add('collapsed');
+                content.classList.add('expanded');
+                toggleBtn.classList.add('collapsed');
+            } else {
+                // Restore saved state for larger screens
+                if (sidebarState === 'true') {
+                    sidebar.classList.add('collapsed');
+                    content.classList.add('expanded');
+                    toggleBtn.classList.add('collapsed');
+                } else {
+                    sidebar.classList.remove('collapsed');
+                    content.classList.remove('expanded');
+                    toggleBtn.classList.remove('collapsed');
+                }
+            }
+        }
+
+        // Check width on page load and window resize
+        window.addEventListener('load', checkWidth);
+        window.addEventListener('resize', checkWidth);
+
+        // Enhanced Popup System
+        const popup = {
+            overlay: document.getElementById('popupOverlay'),
+            currentCallback: null,
+            autoCloseTimer: null,
+
+            show: function(options) {
+                const {
+                    title = 'Notice',
+                    message = '',
+                    type = 'info',
+                    showCancel = false,
+                    confirmText = 'OK',
+                    cancelText = 'Cancel',
+                    callback = null,
+                    duration = null,
+                    preventAutoClose = false,
+                    confirmIcon = 'check',
+                    cancelIcon = 'times'
+                } = options;
+
+                // Clear any existing timer
+                if (this.autoCloseTimer) {
+                    clearTimeout(this.autoCloseTimer);
+                    this.autoCloseTimer = null;
+                }
+
+                // Set popup content
+                this.overlay.querySelector('.popup-title').textContent = title;
+                this.overlay.querySelector('.popup-content').textContent = message;
+                
+                // Set icon based on type
+                const iconElement = this.overlay.querySelector('.popup-icon i');
+                iconElement.className = `fas fa-${
+                    type === 'success' ? 'check-circle' :
+                    type === 'warning' ? 'exclamation-circle' :
+                    type === 'error' ? 'times-circle' :
+                    'info-circle'
+                }`;
+                
+                // Set icon color class
+                const iconContainer = this.overlay.querySelector('.popup-icon');
+                iconContainer.className = `popup-icon ${type}`;
+
+                // Show/hide cancel button and set button text/icons
+                const cancelBtn = this.overlay.querySelector('.popup-btn:not(.primary)');
+                const confirmBtn = this.overlay.querySelector('.popup-btn.primary');
+                
+                cancelBtn.style.display = showCancel ? 'flex' : 'none';
+                cancelBtn.innerHTML = `<i class="fas fa-${cancelIcon}"></i>${cancelText}`;
+                confirmBtn.innerHTML = `<i class="fas fa-${confirmIcon}"></i>${confirmText}`;
+
+                // Store callback
+                this.currentCallback = callback;
+
+                // Show popup
+                this.overlay.classList.add('active');
+
+                // Set auto-close timer if duration is provided and auto-close is not prevented
+                if (duration && !preventAutoClose) {
+                    this.autoCloseTimer = setTimeout(() => {
+                        this.close(false);
+                    }, duration);
+                }
+
+                // Focus confirm button
+                confirmBtn.focus();
+            },
+
+            close: function(confirmed = false) {
+                // Clear any existing timer
+                if (this.autoCloseTimer) {
+                    clearTimeout(this.autoCloseTimer);
+                    this.autoCloseTimer = null;
+                }
+
+                this.overlay.classList.remove('active');
+                if (this.currentCallback) {
+                    this.currentCallback(confirmed);
+                    this.currentCallback = null;
+                }
+            },
+
+            setLoading: function(isLoading, button = 'confirm') {
+                const btn = this.overlay.querySelector(button === 'confirm' ? '.popup-btn.primary' : '.popup-btn:not(.primary)');
+                if (isLoading) {
+                    btn.classList.add('loading');
+                    btn.innerHTML = '<i class="fas fa-spinner"></i>Processing...';
+                } else {
+                    btn.classList.remove('loading');
+                }
+            }
+        };
+
+        // Replace default alert with enhanced version
+        window.alert = function(message) {
+            popup.show({ 
+                message,
+                duration: 3000,
+                type: 'info'
+            });
+        };
+
+        // Replace default confirm with enhanced version
+        window.confirm = function(message) {
+            return new Promise(resolve => {
+                popup.show({
+                    message,
+                    showCancel: true,
+                    preventAutoClose: true,
+                    callback: result => resolve(result),
+                    type: 'warning'
+                });
+            });
+        };
+
+        // Helper functions
+        function closePopup() {
+            popup.close(false);
+        }
+
+        function confirmPopup() {
+            popup.close(true);
+        }
+
+        // Success message helper
+        function showSuccess(message, duration = 3000) {
+            popup.show({
+                title: 'Success',
+                message: message,
+                type: 'success',
+                duration: duration,
+                confirmText: 'OK',
+                confirmIcon: 'check-circle'
+            });
+        }
+
+        // Error message helper
+        function showError(message, duration = 4000) {
+            popup.show({
+                title: 'Error',
+                message: message,
+                type: 'error',
+                duration: duration,
+                confirmText: 'OK',
+                confirmIcon: 'exclamation-circle'
+            });
+        }
+
+        // Warning message helper
+        function showWarning(message, duration = 4000) {
+            popup.show({
+                title: 'Warning',
+                message: message,
+                type: 'warning',
+                duration: duration,
+                confirmText: 'OK',
+                confirmIcon: 'exclamation-triangle'
+            });
+        }
+
+        // Add event listener to prevent popup close when clicking inside
+        document.querySelector('.popup-container').addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+
+        // Add event listener to close popup when clicking overlay
+        document.querySelector('.popup-overlay').addEventListener('click', function() {
+            popup.close(false);
+        });
+
+        // Add keyboard support
+        document.addEventListener('keydown', function(e) {
+            if (!popup.overlay.classList.contains('active')) return;
+            
+            if (e.key === 'Escape') {
+                popup.close(false);
+            } else if (e.key === 'Enter') {
+                const confirmBtn = popup.overlay.querySelector('.popup-btn.primary');
+                if (!confirmBtn.classList.contains('loading')) {
+                    popup.close(true);
+                }
+            }
+        });
+
+        // Initialize all dropdowns
+        document.addEventListener('DOMContentLoaded', function() {
+            var dropdownElementList = [].slice.call(document.querySelectorAll('[data-bs-toggle="dropdown"]'));
+            var dropdownList = dropdownElementList.map(function(dropdownToggleEl) {
+                return new bootstrap.Dropdown(dropdownToggleEl);
+            });
+        });
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

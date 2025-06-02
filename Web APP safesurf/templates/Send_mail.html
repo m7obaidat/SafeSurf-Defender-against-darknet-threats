@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+
+{% block title %}Send Mail{% endblock %}
+
+{% block content %}
+<style>
+    ::placeholder {
+        color: white !important;
+        opacity: 1 !important;
+    }
+    ::-webkit-input-placeholder {
+        color: white !important;
+        opacity: 1 !important;
+    }
+    :-ms-input-placeholder {
+        color: white !important;
+        opacity: 1 !important;
+    }
+    .container-wrapper {
+        min-height: 100vh;
+        padding: 2rem 0;
+    }
+    .card {
+        margin-bottom: 2rem;
+    }
+    .table-card {
+        margin-top: 2rem;
+    }
+    .table-card .card-header {
+        background-color: var(--dark-700);
+        border-bottom: 2px solid var(--danger);
+        padding: 1rem;
+    }
+    .table-card .card-body {
+        padding: 0;
+    }
+    .form-control {
+        background-color: var(--dark-700) !important;
+        border: 1px solid var(--dark-600);
+        color: white !important;
+    }
+    .form-control:focus {
+        border-color: var(--danger);
+        box-shadow: none;
+    }
+    textarea.form-control {
+        min-height: 150px;
+    }
+    .form-control::placeholder {
+        color: white !important;
+        opacity: 1 !important;
+    }
+    .form-control::-webkit-input-placeholder {
+        color: white !important;
+        opacity: 1 !important;
+    }
+    .form-control:-ms-input-placeholder {
+        color: white !important;
+        opacity: 1 !important;
+    }
+</style>
+
+<div class="container-wrapper">
+    <div class="container">
+        <!-- Form Card -->
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card bg-dark-800 p-4">
+                    <!-- Logo and Title -->
+                    <div class="text-center mb-4">
+                        <h3 class="d-flex align-items-center justify-content-center">
+                            <i class="fas fa-envelope text-danger me-2"></i>
+                            <span class="text-danger">SafeSurf</span>
+                        </h3>
+                    </div>
+
+                    <h2 class="text-white mb-4">Send Mail</h2>
+
+                    <form method="POST" action="{{ url_for('send_mail') }}" id="mailForm">
+                        <!-- Subject Input -->
+                        <div class="mb-3">
+                            <input type="text" 
+                                   class="form-control bg-dark text-white" 
+                                   name="subject" 
+                                   id="subject"
+                                   placeholder="Subject" 
+                                   required>
+                        </div>
+
+                        <!-- Message Input -->
+                        <div class="mb-3">
+                            <textarea class="form-control bg-dark text-white" 
+                                      name="message" 
+                                      id="message"
+                                      placeholder="Your message here... (Traffic statistics will be automatically included)"
+                                      required></textarea>
+                            <small class="text-white mt-2 d-block">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Current traffic statistics will be automatically included in the email
+                            </small>
+                        </div>
+
+                        <!-- Send Button -->
+                        <button type="submit" 
+                                class="btn btn-danger w-100 py-2 mb-4">Send Mail</button>
+
+                        <!-- View Sent Mails Link -->
+                        <div class="text-center">
+                            <span class="text-secondary">View sent mails? </span>
+                            <a href="{{ url_for('view_sent_mails') }}" 
+                               class="text-danger text-decoration-none">View List</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sent Mails Table Card -->
+        {% if show_table and sent_mails %}
+        <div class="row justify-content-center table-card">
+            <div class="col-md-10">
+                <div class="card bg-dark-800">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h4 class="text-white mb-0">
+                            <i class="fas fa-paper-plane text-danger me-2"></i>
+                            Sent Mails
+                        </h4>
+                        <div class="d-flex align-items-center">
+                            <span class="badge bg-danger me-3">{{ sent_mails|length }} Total</span>
+                            <button class="btn btn-sm btn-outline-danger" onclick="clearSentMails()">
+                                <i class="fas fa-trash-alt me-1"></i> Clear All
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-dark table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 45%">Subject</th>
+                                        <th style="width: 35%">Date</th>
+                                        <th style="width: 20%">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for mail in sent_mails %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <i class="fas fa-envelope text-danger me-2"></i>
+                                                {{ mail.subject }}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <i class="fas fa-clock text-secondary me-2"></i>
+                                                {{ mail.sent_date.split('T')[0] }}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge {% if mail.status == 'Sent' %}bg-success{% else %}bg-danger{% endif %}">
+                                                <i class="fas {% if mail.status == 'Sent' %}fa-check-circle{% else %}fa-times-circle{% endif %} me-1"></i>
+                                                {{ mail.status }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+document.getElementById('mailForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch("{{ url_for('send_mail') }}", {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Mail sent successfully!');
+            this.reset();
+            // Redirect to view sent mails after successful sending
+            window.location.href = "{{ url_for('view_sent_mails') }}";
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while sending the mail');
+    });
+});
+
+function clearSentMails() {
+    if (confirm('Are you sure you want to clear all sent mails? This action cannot be undone.')) {
+        fetch("{{ url_for('clear_sent_mails') }}", {
+            method: 'POST',
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('All sent mails cleared successfully!');
+                window.location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while clearing the mails');
+        });
+    }
+}
+</script>
+{% endblock %}

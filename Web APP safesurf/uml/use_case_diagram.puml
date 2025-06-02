@@ -1,0 +1,65 @@
+@startuml
+left to right direction
+
+actor "Network Sensor" as Sensor
+actor "Admin" as Admin
+actor "Regular User" as User
+actor "AWS SNS" as SNS
+
+rectangle "SafeSurf System" {
+  usecase "Monitor Traffic" as UC1
+  usecase "Analyze Traffic" as UC2
+  usecase "Detect Threats" as UC3
+  usecase "Send Alerts" as UC4
+  usecase "Manage Whitelist" as UC5
+  usecase "Manage Blacklist" as UC6
+  usecase "Train ML Model" as UC7
+  usecase "Approve/Reject Models" as UC8
+  usecase "Manage Users" as UC9
+  usecase "Generate Reports" as UC10
+  usecase "Update Profile" as UC11
+  usecase "Login" as UC12
+  usecase "View Dashboard" as UC13
+  usecase "View Logs" as UC14
+}
+
+' Main actor relationships
+Admin --> UC5
+Admin --> UC6
+Admin --> UC7
+Admin --> UC8
+Admin --> UC9
+Admin --> UC10
+Admin --> UC11
+Admin --> UC12
+Admin --> UC13
+Admin --> UC14
+User --> UC11
+User --> UC12
+User --> UC13
+User --> UC14
+
+' Network Sensor relationships
+Sensor --> UC1
+Sensor --> UC2
+Sensor --> UC3
+UC1 ..> UC2 : <<include>>
+UC2 ..> UC3 : <<include>>
+UC3 ..> UC4 : <<include>>
+
+' SNS relationships (used by all users except Sensor, not by use case directly)
+Admin --> SNS : uses
+User --> SNS : uses
+
+' Notes
+note right of UC12
+  All users must login to access the system
+end note
+note right of UC6
+  Only Admin can manage the blacklist (add/remove IPs, ports, set expiry, ICMP policy)
+end note
+
+' Admin extends Generate Reports
+Admin ..> UC10 : <<extend>>
+
+@enduml 

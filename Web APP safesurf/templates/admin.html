@@ -1,0 +1,756 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<style>
+    .admin-card {
+        background-color: rgba(33, 37, 41, 0.8) !important;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .stat-card {
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .action-btn {
+        transition: all 0.3s ease;
+    }
+
+    .action-btn:hover {
+        transform: translateY(-2px);
+    }
+
+    .table {
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .user-avatar {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(45deg, #dc3545, #ff4d5a);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+    }
+
+    .admin-badge {
+        background: linear-gradient(45deg, #dc3545, #ff4d5a);
+        border: none;
+    }
+
+    /* Report Generation Styles */
+    .report-options {
+        background: rgba(33, 37, 41, 0.8);
+        border-radius: 8px;
+        padding: 20px;
+    }
+
+    .report-type-card {
+        background: var(--dark-700);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 15px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .report-type-card:hover {
+        transform: translateY(-5px);
+        border-color: var(--primary);
+    }
+
+    .report-type-card.selected {
+        border-color: var(--primary);
+        box-shadow: 0 0 15px rgba(235, 22, 22, 0.2);
+    }
+
+    .date-range-picker {
+        background: var(--dark-700);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: var(--text-light);
+        border-radius: 6px;
+        padding: 8px 12px;
+    }
+
+    /* Password Requirements Styling */
+    #passwordRequirements {
+        background: rgba(33, 37, 41, 0.9);
+        border-radius: 8px;
+        padding: 15px;
+        margin-top: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+    }
+
+    #passwordRequirements ul {
+        margin: 0;
+        padding: 0;
+    }
+
+    #passwordRequirements li {
+        margin: 8px 0;
+        padding: 8px 12px;
+        border-radius: 4px;
+        transition: all 0.3s ease;
+        background: rgba(255, 255, 255, 0.05);
+        display: flex;
+        align-items: center;
+    }
+
+    #passwordRequirements li i {
+        margin-right: 8px;
+        font-size: 14px;
+        width: 20px;
+        text-align: center;
+    }
+
+    #passwordRequirements li.text-success {
+        background: rgba(40, 167, 69, 0.2);
+        border-left: 3px solid #28a745;
+    }
+
+    #passwordRequirements li.text-danger {
+        background: rgba(220, 53, 69, 0.2);
+        border-left: 3px solid #dc3545;
+    }
+
+    #passwordRequirements li.text-success i {
+        color: #28a745;
+    }
+
+    #passwordRequirements li.text-danger i {
+        color: #dc3545;
+    }
+
+    .password-strength-meter {
+        height: 4px;
+        background: rgba(255, 255, 255, 0.1);
+        margin-top: 10px;
+        border-radius: 2px;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .password-strength-meter div {
+        height: 100%;
+        width: 0;
+        transition: all 0.3s ease;
+        border-radius: 2px;
+    }
+
+    .stats-list {
+        padding: 0.5rem;
+        background: var(--dark-800);
+        border-radius: 8px;
+    }
+
+    .stat-item {
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        transition: background-color 0.2s ease;
+    }
+
+    .stat-item:hover {
+        background: var(--dark-600);
+    }
+
+    .stat-item .badge {
+        min-width: 48px;
+        padding: 0.5rem 0.75rem;
+    }
+
+    #blacklistStatsModal .modal-content {
+        border: 1px solid var(--dark-600);
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    }
+
+    #blacklistStatsModal .card {
+        transition: transform 0.2s ease;
+        border: 1px solid var(--dark-600);
+    }
+
+    #blacklistStatsModal .card:hover {
+        transform: translateY(-2px);
+    }
+</style>
+
+<div class="container-fluid">
+    <!-- Welcome Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="admin-card card">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3 class="text-white mb-0">
+                            <i class="fas fa-user-shield text-danger me-2"></i>
+                            Welcome, {{ current_user.username }}
+                        </h3>
+                        <p class="text-white mb-0">Administrator Dashboard</p>
+                    </div>
+                    <div>
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-light action-btn me-2">
+                            <i class="fas fa-chart-line"></i> Main Dashboard
+                        </a>
+                        <a href="{{ url_for('logout') }}" class="btn btn-danger action-btn">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="admin-card card">
+                <div class="card-body">
+                    <h5 class="text-white mb-3">Quick Actions</h5>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <a href="{{ url_for('register') }}" class="btn btn-danger action-btn">
+                            <i class="fas fa-user-plus"></i> Create User
+                        </a>
+                        <a href="{{ url_for('ml_dashboard') }}" class="btn btn-danger action-btn">
+                            <i class="fas fa-brain"></i> ML Models
+                        </a>
+                        <a href="{{ url_for('view_blacklist') }}" class="btn btn-danger action-btn">
+                            <i class="fas fa-ban"></i> Manage Blacklist
+                        </a>
+                        <a href="{{ url_for('view_whitelist') }}" class="btn btn-danger action-btn">
+                            <i class="fas fa-check-circle"></i> Manage Whitelist
+                        </a>
+                        <a href="{{ url_for('send_mail') }}" class="btn btn-danger action-btn">
+                            <i class="fas fa-envelope"></i> Send Mail
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Generation Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="admin-card card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="text-white mb-0">
+                            <i class="fas fa-file-pdf text-danger me-2"></i>
+                            Generate Report
+                        </h5>
+                        <button onclick="generateReport()" class="btn btn-danger action-btn">
+                            <i class="fas fa-download me-2"></i>Generate PDF
+                        </button>
+                    </div>
+                    
+                    <div class="report-options">
+                        <!-- Date Range Selection -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="text-white mb-3">Select Date Range</h6>
+                                <div class="mb-3">
+                                    <label class="form-label text-white">Start Date</label>
+                                    <input type="date" class="form-control date-range-picker" id="startDate">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label text-white">End Date</label>
+                                    <input type="date" class="form-control date-range-picker" id="endDate">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Management -->
+    <div class="row">
+        <div class="col-12">
+            <div class="admin-card card">
+                <div class="card-body">
+                    <h5 class="text-white mb-3">User Management</h5>
+                    <div class="table-responsive">
+                        <table class="table table-dark table-hover">
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Created At</th>
+                                    <th>Last Login</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in users %}
+                                <tr data-user-id="{{ user.id }}">
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="user-avatar me-2">
+                                                {{ user.username[0].upper() }}
+                                            </div>
+                                            {{ user.username }}
+                                        </div>
+                                    </td>
+                                    <td>{{ user.email }}</td>
+                                    <td>
+                                        {% if user.is_admin %}
+                                        <span class="badge admin-badge">Administrator</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">User</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if user.created_at %}
+                                            <span data-bs-toggle="tooltip" title="{{ user.created_at.strftime('%Y-%m-%d %H:%M:%S') }}">
+                                                {{ user.created_at.strftime('%Y-%m-%d') }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted">Not available</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if user.last_login %}
+                                            <span data-bs-toggle="tooltip" 
+                                                  title="{{ user.last_login.strftime('%Y-%m-%d %H:%M:%S') }}"
+                                                  class="{% if (now - user.last_login).days < 7 %}text-success{% endif %}">
+                                                {{ user.last_login.strftime('%Y-%m-%d') }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted">Never</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <button class="btn btn-sm btn-outline-primary action-btn" 
+                                                    onclick="openEditModal({{ user.id }}, '{{ user.username }}', '{{ user.email }}', {{ user.is_admin|tojson }})"
+                                                    data-bs-toggle="tooltip" 
+                                                    title="Edit User">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            {% if user.id != current_user.id %}
+                                            <button class="btn btn-sm btn-outline-danger action-btn" 
+                                                    onclick="confirmDelete({{ user.id }}, '{{ user.username }}')"
+                                                    data-bs-toggle="tooltip" 
+                                                    title="Delete User">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Edit User Modal -->
+<div class="modal fade" id="editUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title text-white">Edit User</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editUserForm">
+                    <input type="hidden" id="editUserId">
+                    <div class="mb-3">
+                        <label class="form-label text-white">Username</label>
+                        <input type="text" class="form-control bg-dark text-white" id="editUsername" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-white">Email</label>
+                        <input type="email" class="form-control bg-dark text-white" id="editEmail" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-white">New Password (leave blank to keep current)</label>
+                        <input type="password" class="form-control bg-dark text-white" id="editPassword" oninput="validatePassword(this.value)">
+                        <div id="passwordRequirements" class="mt-2" style="display: none;">
+                            <p class="text-white-50 mb-2">Password must contain:</p>
+                            <ul class="list-unstyled">
+                                <li id="lengthCheck" class="text-danger">
+                                    <i class="fas fa-times-circle"></i> At least 8 characters
+                                </li>
+                                <li id="uppercaseCheck" class="text-danger">
+                                    <i class="fas fa-times-circle"></i> One uppercase letter
+                                </li>
+                                <li id="lowercaseCheck" class="text-danger">
+                                    <i class="fas fa-times-circle"></i> One lowercase letter
+                                </li>
+                                <li id="numberCheck" class="text-danger">
+                                    <i class="fas fa-times-circle"></i> One number
+                                </li>
+                                <li id="specialCheck" class="text-danger">
+                                    <i class="fas fa-times-circle"></i> One special character
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="editIsAdmin">
+                        <label class="form-check-label text-white">Administrator Access</label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-secondary">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveChangesBtn" onclick="saveUserChanges()" disabled>Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title text-white">Confirm Deletion</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-white">
+                Are you sure you want to delete user "<span id="deleteUserName"></span>"?
+                This action cannot be undone.
+            </div>
+            <div class="modal-footer border-secondary">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="deleteUser()">Delete User</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Blacklist Stats Modal -->
+<div class="modal fade" id="blacklistStatsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content bg-dark text-light">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title">
+                    <i class="fas fa-chart-pie me-2"></i>
+                    Blacklist Statistics
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-4">
+                    <!-- IP Statistics Card -->
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center mb-3">
+                                    <i class="fas fa-network-wired text-danger me-2"></i>
+                                    <h5 class="card-title mb-0">IP Statistics</h5>
+                                </div>
+                                <div class="stats-list">
+                                    <div class="stat-item d-flex justify-content-between align-items-center mb-2">
+                                        <span>Total IPs:</span>
+                                        <span class="badge bg-secondary" id="totalIPs">0</span>
+                                    </div>
+                                    <div class="stat-item d-flex justify-content-between align-items-center mb-2">
+                                        <span>Active:</span>
+                                        <span class="badge bg-success" id="activeIPs">0</span>
+                                    </div>
+                                    <div class="stat-item d-flex justify-content-between align-items-center">
+                                        <span>Expired:</span>
+                                        <span class="badge bg-danger" id="expiredIPs">0</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Port Statistics Card -->
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center mb-3">
+                                    <i class="fas fa-plug text-primary me-2"></i>
+                                    <h5 class="card-title mb-0">Port Statistics</h5>
+                                </div>
+                                <div class="stats-list">
+                                    <div class="stat-item d-flex justify-content-between align-items-center mb-2">
+                                        <span>Total Ports:</span>
+                                        <span class="badge bg-secondary" id="totalPorts">0</span>
+                                    </div>
+                                    <div class="stat-item d-flex justify-content-between align-items-center mb-2">
+                                        <span>Active:</span>
+                                        <span class="badge bg-success" id="activePorts">0</span>
+                                    </div>
+                                    <div class="stat-item d-flex justify-content-between align-items-center">
+                                        <span>Expired:</span>
+                                        <span class="badge bg-danger" id="expiredPorts">0</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-secondary">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let deleteUserId = null;
+let editModal;
+let deleteModal;
+
+document.addEventListener('DOMContentLoaded', function() {
+    editModal = new bootstrap.Modal(document.getElementById('editUserModal'));
+    deleteModal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+    
+    // Initialize all tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+
+function validatePassword(password) {
+    const requirements = {
+        length: password.length >= 8,
+        uppercase: /[A-Z]/.test(password),
+        lowercase: /[a-z]/.test(password),
+        number: /[0-9]/.test(password),
+        special: /[!@#$%^&*()_+\-=\[\]{};:,.<>?]/.test(password)
+    };
+
+    // Show password requirements if there's any input
+    const requirementsDiv = document.getElementById('passwordRequirements');
+    requirementsDiv.style.display = password ? 'block' : 'none';
+
+    // Update each requirement check
+    Object.keys(requirements).forEach(req => {
+        const element = document.getElementById(req + 'Check');
+        if (requirements[req]) {
+            element.className = 'text-success';
+            element.innerHTML = '<i class="fas fa-check-circle"></i> ' + element.innerHTML.split('</i> ')[1];
+        } else {
+            element.className = 'text-danger';
+            element.innerHTML = '<i class="fas fa-times-circle"></i> ' + element.innerHTML.split('</i> ')[1];
+        }
+    });
+
+    // Enable/disable save button based on password validity
+    const saveButton = document.getElementById('saveChangesBtn');
+    if (password) {
+        // If password field is not empty, all requirements must be met
+        const isValid = Object.values(requirements).every(req => req);
+        saveButton.disabled = !isValid;
+    } else {
+        // If password field is empty, it's optional, so enable the button
+        saveButton.disabled = false;
+    }
+
+    return Object.values(requirements).every(req => req);
+}
+
+function openEditModal(userId, username, email, isAdmin) {
+    document.getElementById('editUserId').value = userId;
+    document.getElementById('editUsername').value = username;
+    document.getElementById('editEmail').value = email;
+    document.getElementById('editPassword').value = '';
+    document.getElementById('editIsAdmin').checked = isAdmin;
+    document.getElementById('passwordRequirements').style.display = 'none';
+    document.getElementById('saveChangesBtn').disabled = false;
+    editModal.show();
+}
+
+function confirmDelete(userId, username) {
+    deleteUserId = userId;
+    document.getElementById('deleteUserName').textContent = username;
+    deleteModal.show();
+}
+
+function showAlert(message, type = 'success') {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.querySelector('.container-fluid').insertBefore(alertDiv, document.querySelector('.row'));
+    
+    // Auto dismiss after 3 seconds
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 3000);
+}
+
+async function saveUserChanges() {
+    const userId = document.getElementById('editUserId').value;
+    const data = {
+        username: document.getElementById('editUsername').value,
+        email: document.getElementById('editEmail').value,
+        password: document.getElementById('editPassword').value,
+        is_admin: document.getElementById('editIsAdmin').checked
+    };
+
+    try {
+        const response = await fetch(`/admin/edit_user/${userId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            editModal.hide();
+            showAlert(result.message);
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            showAlert(result.message, 'danger');
+        }
+    } catch (error) {
+        showAlert('An error occurred while saving changes', 'danger');
+    }
+}
+
+async function deleteUser() {
+    try {
+        const response = await fetch(`/admin/delete_user/${deleteUserId}`, {
+            method: 'POST'
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            deleteModal.hide();
+            showAlert(result.message);
+            
+            // Find and remove the user's row from the table
+            const userRow = document.querySelector(`tr[data-user-id="${deleteUserId}"]`);
+            if (userRow) {
+                userRow.remove();
+            }
+        } else {
+            showAlert(result.message, 'danger');
+        }
+    } catch (error) {
+        showAlert('An error occurred while deleting the user', 'danger');
+    }
+}
+
+// Report generation functionality
+let selectedReports = new Set();
+
+function toggleReportType(element, type) {
+    element.classList.toggle('selected');
+    if (selectedReports.has(type)) {
+        selectedReports.delete(type);
+    } else {
+        selectedReports.add(type);
+    }
+}
+
+async function generateReport() {
+    // Disable the generate button to prevent multiple clicks
+    const generateButton = document.querySelector('[onclick="generateReport()"]');
+    generateButton.disabled = true;
+    generateButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Generating...';
+
+    try {
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+
+        if (!startDate || !endDate) {
+            showAlert('Please select both start and end dates', 'warning');
+            return;
+        }
+
+        // Validate date range
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        if (end < start) {
+            showAlert('End date must be after start date', 'warning');
+            return;
+        }
+
+        const response = await fetch('/admin/generate_report', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                startDate,
+                endDate
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to generate report');
+        }
+
+        const blob = await response.blob();
+        if (blob.size === 0) {
+            throw new Error('Generated PDF is empty');
+        }
+
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'safesurf_security_report.pdf';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        showAlert('Report generated successfully!', 'success');
+    } catch (error) {
+        console.error('Report generation error:', error);
+        showAlert(error.message || 'An error occurred while generating the report', 'danger');
+    } finally {
+        // Re-enable the generate button
+        generateButton.disabled = false;
+        generateButton.innerHTML = '<i class="fas fa-download me-2"></i>Generate PDF';
+    }
+}
+
+function viewBlacklistStats() {
+    fetch('/get_blacklist_stats')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('totalIPs').textContent = data.ip_stats.total;
+            document.getElementById('activeIPs').textContent = data.ip_stats.active;
+            document.getElementById('expiredIPs').textContent = data.ip_stats.expired;
+            document.getElementById('totalPorts').textContent = data.port_stats.total;
+            document.getElementById('activePorts').textContent = data.port_stats.active;
+            document.getElementById('expiredPorts').textContent = data.port_stats.expired;
+            
+            const modal = new bootstrap.Modal(document.getElementById('blacklistStatsModal'));
+            modal.show();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showError('Failed to load blacklist statistics');
+        });
+}
+</script>
+{% endblock %} 

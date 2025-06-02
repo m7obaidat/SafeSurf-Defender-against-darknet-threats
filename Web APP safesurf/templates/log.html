@@ -1,0 +1,296 @@
+{% extends "base.html" %}
+
+{% block title %}Log Table{% endblock %}
+
+{% block content %}
+<style>
+    /* Filter Section Styling */
+    .filters-section {
+        background-color: var(--dark-800);
+        border: 1px solid var(--danger);
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .form-label {
+        color: white;
+        margin-bottom: 8px;
+    }
+    
+    .form-control, .form-select {
+        background-color: var(--dark-700) !important;
+        border: 1px solid var(--dark-600);
+        color: white !important;
+        transition: all 0.3s ease;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: var(--danger);
+        box-shadow: 0 0 0 0.2rem rgba(235, 22, 22, 0.25);
+    }
+    
+    .form-control::placeholder {
+        color: rgba(255, 255, 255, 0.7) !important;
+    }
+    
+    /* Table Styling */
+    .table-container {
+        background-color: var(--dark-800);
+        border-radius: 8px;
+        padding: 20px;
+        margin-top: 20px;
+    }
+    
+    .table {
+        margin-bottom: 0;
+    }
+    
+    .table-dark {
+        background-color: var(--dark-700);
+    }
+    
+    .table-hover tbody tr:hover {
+        background-color: rgba(235, 22, 22, 0.1);
+    }
+</style>
+
+<div class="container mt-5" style="max-height: 500px; overflow-y: auto;">
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title text-white mb-4">Real-Time Log Table</h5>
+
+            <!-- Filters Section -->
+            <div class="filters-section">
+                <div class="row">
+                    <!-- Src IP Filter -->
+                    <div class="col-md-4 mb-3">
+                        <label for="srcIPFilter" class="form-label">Source IP</label>
+                        <input type="text" 
+                               id="srcIPFilter" 
+                               class="form-control" 
+                               placeholder="Enter source IP address..."
+                               autocomplete="off">
+                    </div>
+
+                    <!-- Dst IP Filter -->
+                    <div class="col-md-4 mb-3">
+                        <label for="dstIPFilter" class="form-label">Destination IP</label>
+                        <input type="text" 
+                               id="dstIPFilter" 
+                               class="form-control" 
+                               placeholder="Enter destination IP address..."
+                               autocomplete="off">
+                    </div>
+
+                    <!-- Layer Filter -->
+                    <div class="col-md-4 mb-3">
+                        <label for="layerFilter" class="form-label">Traffic Type</label>
+                        <select id="layerFilter" class="form-select">
+                            <option value="">All Traffic Types</option>
+                            <option value="Normal">Normal</option>
+                            <option value="Darknet">Darknet</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Table Section -->
+            <div class="table-container">
+                <table class="table table-bordered table-hover table-dark">
+                    <thead>
+                        <tr>
+                            <th id="timestampHeader" style="cursor: pointer;">
+                                Timestamp <i id="timestampIcon" class="fas fa-sort"></i>
+                            </th>
+                            <th>Src IP</th>
+                            <th>Src Port</th>
+                            <th>Dst IP</th>
+                            <th>Dst Port</th>
+                            <th>Layer 1</th>
+                            <th>Layer 2</th>
+                            <th>Layer 3</th>
+                        </tr>
+                    </thead>
+                    <tbody id="flowTableBody">
+                        <!-- Realtime rows will be inserted here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Socket.IO client script -->
+<script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+<script src="https://kit.fontawesome.com/a076d05399.js"></script>
+<script>
+    // Connect to your Flask-SocketIO backend
+    const socket = io.connect('http://127.0.0.1:5000');
+
+    const tableBody = document.getElementById("flowTableBody");
+    const timestampHeader = document.getElementById("timestampHeader");
+    const timestampIcon = document.getElementById("timestampIcon");
+    const srcIPFilter = document.getElementById("srcIPFilter");
+    const dstIPFilter = document.getElementById("dstIPFilter");
+    const layerFilter = document.getElementById("layerFilter");
+
+    let trafficData = [];        // Array to hold all logs
+    let filteredData = [];       // Array to hold filtered logs
+    let uniqueSrcIPs = new Set();  // Set to store unique source IPs
+    let uniqueDstIPs = new Set();  // Set to store unique destination IPs
+    let isDescending = true; // Boolean to toggle between descending and ascending order
+
+    // Store selected filter values globally
+    let filterValues = {
+        srcIP: "",
+        dstIP: "",
+        layer: ""
+    };
+
+    // Fetch all logs when the page loads
+    fetch('/get_all_logs')
+        .then(response => response.json())
+        .then(data => {
+            trafficData = data;  // Assign the fetched logs to trafficData
+            updateIPDropdowns();  // Populate the dropdowns with the fetched IPs
+            applyFilters();       // Apply any current filters
+            sortTable();          // Sort the logs initially
+            displayLogs();        // Display the logs
+        });
+
+    // Listen for incoming flow data in real-time
+    socket.on('traffic_update', function (data) {
+        // Add new data to trafficData without removing old data
+        trafficData.push(data);
+
+        // Collect unique source and destination IPs
+        uniqueSrcIPs.add(data.src);
+        uniqueDstIPs.add(data.dst);
+
+        // Populate the select dropdowns with the latest unique IPs
+        updateIPDropdowns();
+
+        // Reapply filters on new data
+        applyFilters();
+        sortTable();
+        displayLogs();
+    });
+
+    // Function to update the IP dropdowns with unique IPs
+    function updateIPDropdowns() {
+        // Update Src IP dropdown
+        srcIPFilter.value = filterValues.srcIP; // Keep the value intact
+        dstIPFilter.value = filterValues.dstIP; // Keep the value intact
+    }
+
+    // Function to apply filters to the data
+    function applyFilters() {
+        filterValues.srcIP = srcIPFilter.value.toLowerCase();
+        filterValues.dstIP = dstIPFilter.value.toLowerCase();
+        filterValues.layer = layerFilter.value.toLowerCase();
+
+        // Apply filtering logic
+        filteredData = trafficData.filter(item => {
+            return (item.src.toLowerCase().includes(filterValues.srcIP) &&
+                item.dst.toLowerCase().includes(filterValues.dstIP) &&
+                (filterValues.layer ? item.label.toLowerCase() === filterValues.layer : true));
+        });
+    }
+
+    // Function to sort the table data
+    function sortTable() {
+        filteredData.sort((a, b) => {
+            return isDescending
+                ? new Date(b.timestamp) - new Date(a.timestamp)  // Sort descending
+                : new Date(a.timestamp) - new Date(b.timestamp); // Sort ascending
+        });
+    }
+
+    // Function to display logs in the table
+    function displayLogs() {
+        // Clear the table body before re-inserting the rows
+        tableBody.innerHTML = '';
+
+        // Insert rows based on sorted and filtered data
+        filteredData.forEach(item => {
+            const row = document.createElement('tr');
+
+            // Optional: highlight Darknet traffic
+            if (item.label === 'Darknet') {
+                row.classList.add('table-danger');
+            }
+
+            row.innerHTML = `
+                <td>${item.timestamp || ''}</td>
+                <td>${item.src || ''}</td>
+                <td>${item.srcP || ''}</td>
+                <td>${item.dst || ''}</td>
+                <td>${item.dstP || ''}</td>
+                <td>${item.label || ''}</td>
+                <td>${item.label_2 || ''}</td>
+                <td>${item.label_3 || ''}</td>
+            `;
+
+            tableBody.appendChild(row);
+        });
+    }
+
+    // Event listener for the timestamp column header to toggle sorting
+    timestampHeader.addEventListener('click', function () {
+        isDescending = !isDescending; // Toggle the sorting order
+        sortTable(); // Re-sort the data
+        displayLogs(); // Display the logs
+        updateSortIcon();
+    });
+
+    // Function to update the sorting icon
+    function updateSortIcon() {
+        if (isDescending) {
+            timestampIcon.classList.remove('fa-sort-up', 'fa-sort-down');
+            timestampIcon.classList.add('fa-sort-down'); // Show downward arrow
+        } else {
+            timestampIcon.classList.remove('fa-sort-up', 'fa-sort-down');
+            timestampIcon.classList.add('fa-sort-up'); // Show upward arrow
+        }
+    }
+
+    // Ensure filters persist after page reload or new data
+    window.addEventListener('load', () => {
+        // Apply saved filter values when the page loads
+        const savedFilterValues = localStorage.getItem('filterValues');
+        if (savedFilterValues) {
+            filterValues = JSON.parse(savedFilterValues);
+            srcIPFilter.value = filterValues.srcIP;
+            dstIPFilter.value = filterValues.dstIP;
+            layerFilter.value = filterValues.layer;
+        }
+
+        // Apply the filters and display the logs
+        applyFilters();
+        displayLogs();
+    });
+
+    // Save filter values to localStorage when they change
+    srcIPFilter.addEventListener('input', () => {
+        filterValues.srcIP = srcIPFilter.value.toLowerCase();
+        localStorage.setItem('filterValues', JSON.stringify(filterValues));
+        applyFilters();
+        displayLogs();
+    });
+
+    dstIPFilter.addEventListener('input', () => {
+        filterValues.dstIP = dstIPFilter.value.toLowerCase();
+        localStorage.setItem('filterValues', JSON.stringify(filterValues));
+        applyFilters();
+        displayLogs();
+    });
+
+    layerFilter.addEventListener('change', () => {
+        filterValues.layer = layerFilter.value.toLowerCase();
+        localStorage.setItem('filterValues', JSON.stringify(filterValues));
+        applyFilters();
+        displayLogs();
+    });
+</script>
+{% endblock %}

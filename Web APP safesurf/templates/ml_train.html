@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}Train Model{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title mb-4">Train New Model</h4>
+                    
+                    <!-- Training Status -->
+                    <div id="trainingProgress" style="display: none;">
+                        <div class="alert alert-info mb-4">
+                            <h5 class="alert-heading mb-3">Training in Progress</h5>
+                            <div class="card bg-dark">
+                                <div class="card-body">
+                                    <h6 class="card-subtitle mb-2 text-muted">Training Log</h6>
+                                    <div id="debugLog" 
+                                         style="height: 200px; 
+                                                overflow-y: auto; 
+                                                font-family: monospace; 
+                                                font-size: 0.9em; 
+                                                color: white;
+                                                background-color: #1a1a1a;
+                                                padding: 10px;
+                                                border-radius: 5px;">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Info Text -->
+                    <div class="alert alert-secondary mb-4">
+                        <h5 class="alert-heading mb-3">About Model Training</h5>
+                        <p class="mb-0">
+                            This will train a new model using the existing dataset combined with recent traffic data from Redis.
+                            The training process includes:
+                        </p>
+                        <ul class="mb-0 mt-2">
+                            <li>Loading and preprocessing data</li>
+                            <li>Applying SMOTE for data balancing</li>
+                            <li>Training Decision Tree classifier</li>
+                            <li>Evaluating model performance</li>
+                        </ul>
+                        <hr>
+                        <p class="mb-0">
+                            <i class="fas fa-info-circle"></i> The model will need admin approval before being deployed.
+                        </p>
+                    </div>
+                    
+                    <!-- Training Form -->
+                    <form id="trainingForm" method="POST">
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg" id="trainButton">
+                                <i class="fas fa-play"></i> Start Training
+                            </button>
+                            <a href="{{ url_for('ml_dashboard') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to Dashboard
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const socket = io({
+            transports: ['websocket'],
+            upgrade: false
+        });
+
+        const debugLog = document.getElementById('debugLog');
+        const trainingProgress = document.getElementById('trainingProgress');
+        const trainingForm = document.getElementById('trainingForm');
+        const trainButton = document.getElementById('trainButton');
+
+        socket.on('connect', () => {
+            console.log('Socket.IO Connected');
+            addLogMessage('WebSocket connection established');
+        });
+
+        socket.on('disconnect', () => {
+            console.log('Socket.IO Disconnected');
+            addLogMessage('WebSocket connection lost');
+        });
+
+        socket.on('connect_error', (error) => {
+            console.error('Connection Error:', error);
+            addLogMessage('Connection error: ' + error);
+        });
+
+        function addLogMessage(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.innerHTML = `<span style="color: #888;">[${timestamp}]</span> ${message}`;
+            debugLog.appendChild(logEntry);
+            debugLog.scrollTop = debugLog.scrollHeight;
+            console.log(`[${timestamp}] ${message}`);
+        }
+
+        // Socket.IO event listeners
+        socket.on('training_progress', function(data) {
+            console.log('Training update:', data);
+            trainingProgress.style.display = 'block';
+            addLogMessage(data.message);
+        });
+
+        socket.on('training_complete', function(data) {
+            console.log('Training complete:', data);
+            addLogMessage('Training complete! Redirecting to dashboard...');
+            setTimeout(() => {
+                window.location.href = "{{ url_for('ml_dashboard') }}";
+            }, 2000);
+        });
+
+        socket.on('training_error', function(data) {
+            console.log('Training error:', data);
+            addLogMessage(`Error: ${data.error}`);
+            trainButton.disabled = false;
+        });
+
+        // Form submission
+        trainingForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            console.log('Form submitted, starting training...');
+            trainButton.disabled = true;
+            trainingProgress.style.display = 'block';
+            addLogMessage('Starting training process...');
+            
+            fetch("{{ url_for('train_model') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            }).then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            }).catch(error => {
+                console.error('Error:', error);
+                addLogMessage(`Error: ${error.message}`);
+                trainButton.disabled = false;
+            });
+        });
+
+        addLogMessage('Training page loaded. Ready to start.');
+    });
+</script>
+{% endblock %} 

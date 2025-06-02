@@ -1,0 +1,48 @@
+@startuml
+start
+
+:Network Traffic Capture;
+
+' Check Blacklist first
+:Check Blacklist;
+diamond1 -->[yes] :Mark as Blocked;
+:Log Blocked Activity;
+goto update_stats
+
+diamond1 -->[no] :Check Whitelist;
+diamond2 -->[yes] :Mark as Safe;
+goto update_stats
+
+diamond2 -->[no] :Darknet Analysis (Layer 1);
+:Darknet Analysis (Layer 2);
+:Darknet Analysis (Layer 3);
+
+' ML Model Analysis and Counters
+:ML Model Analysis;
+if (Is Darknet?) then (yes)
+  :Increment Darknet Counter;
+  :Check Threat Level;
+  if (High Threat?) then (yes)
+    :Generate Alert;
+    :Send Email Notification;
+  else (no)
+    :Log Activity;
+  endif
+else (no)
+  :Increment Normal Counter;
+endif
+
+goto update_stats
+
+' Update statistics and reporting
+update_stats: :Update Statistics;
+if (Generate Report?) then (yes)
+  :Collect Period Statistics;
+  :Create PDF Report;
+  :Save Report;
+endif
+:Continue Monitoring;
+stop
+
+note right: Traffic analysis and threat detection workflow
+@enduml 

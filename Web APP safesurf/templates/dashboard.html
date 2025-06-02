@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Traffic Stats Cards -->
+    <div class="row g-4 mb-4">
+        <!-- Total Traffic -->
+        <div class="col-sm-6 col-xl-4">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <h6 class="mb-2">Total Traffic</h6>
+                            <h3 class="mb-0" id="totalTraffic">{{ normal_count + darknet_count }}</h3>
+                        </div>
+                        <div class="text-primary">
+                            <i class="fas fa-globe fa-3x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Normal Traffic -->
+        <div class="col-sm-6 col-xl-4">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <h6 class="mb-2">Normal Traffic</h6>
+                            <h3 class="mb-0" id="normalTraffic">{{ normal_count }}</h3>
+                        </div>
+                        <div class="text-success">
+                            <i class="fas fa-check-circle fa-3x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Darknet Traffic -->
+        <div class="col-sm-6 col-xl-4">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <h6 class="mb-2">Darknet Traffic</h6>
+                            <h3 class="mb-0" id="darknetTraffic">{{ darknet_count }}</h3>
+                        </div>
+                        <div class="text-danger">
+                            <i class="fas fa-user-secret fa-3x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Doughnut Charts for Traffic Types and Layer 2 Protocols -->
+    <div class="row mb-4">
+        <!-- Traffic Distribution Doughnut Chart -->
+        <div class="col-sm-6 col-xl-6">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="mb-2">Traffic Distribution</h6>
+                    <canvas id="trafficDoughnut" style="height: 300px;"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Layer 2 Protocol Distribution Doughnut Chart -->
+        <div class="col-sm-6 col-xl-6">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="mb-2">Layer 2 Protocol Distribution</h6>
+                    <canvas id="layer2Doughnut" style="height: 300px;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Socket.IO -->
+    <script src="https://cdn.jsdelivr.net/npm/socket.io-client@4.0.0/dist/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        const socket = io.connect('http://127.0.0.1:5000'); // Ensure this is correct
+
+        let doughnutChart = null;
+        let layer2Chart = null;
+        const trafficChartCtx = document.getElementById('trafficDoughnut').getContext('2d');
+        doughnutChart = new Chart(trafficChartCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['normal', 'darknet'],
+                datasets: [{
+                    data: [0, 0],
+                    backgroundColor: ['#28a746', '#dc3546']
+                }]
+
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top'
+
+                    }
+                }
+            }
+        });
+
+
+        const layer2ChartCtx = document.getElementById('layer2Doughnut').getContext('2d');
+        layer2Chart = new Chart(layer2ChartCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Tor', 'VPN', 'I2P', 'Freenet', 'Zeronet'],
+                datasets: [{
+                    data: [0, 0, 0, 0, 0],
+                    backgroundColor: ['#28a746', '#dc3546', '#35d6dc', '#1447e0', '#d6e014']
+                }]
+
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top'
+
+                    }
+                }
+            }
+        });
+
+        // Listen for traffic update from the backend
+        socket.on('traffic_update', function (data) {
+            // Update the traffic stats displayed on the page
+            document.getElementById('normalTraffic').textContent = data.normal_count;
+            document.getElementById('darknetTraffic').textContent = data.darknet_count;
+            document.getElementById('totalTraffic').textContent = data.total_traffic;
+
+            // Update the Doughnut chart data
+            if (doughnutChart) {
+                doughnutChart.data.datasets[0].data = [data.normal_count, data.darknet_count];
+                doughnutChart.update();
+            }
+
+            // Update the Layer 2 Protocol chart
+            if (layer2Chart) {
+                layer2Chart.data.datasets[0].data = [
+                    data.layer2_counters.Tor,
+                    data.layer2_counters.VPN,
+                    data.layer2_counters.I2P,
+                    data.layer2_counters.Freenet,
+                    data.layer2_counters.Zeronet
+                ];
+                layer2Chart.update();
+            }
+        });
+
+        // Fetch initial stats when the page loads
+        socket.emit('get_traffic_stats');
+    </script>
+</div>
+{% endblock %}
+

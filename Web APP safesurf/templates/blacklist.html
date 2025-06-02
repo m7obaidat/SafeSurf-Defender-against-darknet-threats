@@ -1,0 +1,527 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="text-light">Blacklist Management</h2>
+                <div class="btn-group align-items-center">
+                    <div class="me-3">
+                        <form method="POST" action="{{ url_for('set_icmp_policy') }}" class="d-inline-block me-3">
+                            <label for="icmpDropdown" class="form-label text-light mb-0">ICMP Policy:</label>
+                            <select id="icmpDropdown" name="icmp_policy" class="form-select bg-dark text-light d-inline-block" style="width: 180px;">
+                                <option value="allow" {% if not block_icmp %}selected{% endif %}>Allow ICMP</option>
+                                <option value="block" {% if block_icmp %}selected{% endif %}>Block ICMP</option>
+                            </select>
+                            <button type="submit" class="btn btn-primary btn-sm ms-2">Submit</button>
+                            <span class="ms-2 badge {{ 'bg-danger' if block_icmp else 'bg-success' }}">
+                                {{ 'Blocked' if block_icmp else 'Allowed' }}
+                            </span>
+                        </form>
+                    </div>
+                    <a href="{{ url_for('view_blacklist_logs') }}" class="btn btn-outline-danger">
+                        <i class="fas fa-history"></i> View Logs
+                    </a>
+                    <button class="btn btn-outline-light ms-2" onclick="exportRules()">
+                        <i class="fas fa-download"></i> Export Rules
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Add Entry Form -->
+            <div class="card bg-dark text-light mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4><i class="fas fa-plus-circle"></i> Add Blacklist Entry</h4>
+                    <button class="btn btn-outline-light btn-sm" onclick="toggleForm()">
+                        <i class="fas fa-chevron-down" id="formToggleIcon"></i>
+                    </button>
+                </div>
+                <div class="card-body" id="addEntryForm">
+                    <form id="blacklistForm">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="entry_type">Entry Type</label>
+                                    <select class="form-control bg-dark text-light" id="entry_type" name="entry_type" required>
+                                        <option value="ip">IP Address</option>
+                                        <option value="port">Port</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="value">Value</label>
+                                    <input type="text" class="form-control bg-dark text-light" id="value" name="value" required>
+                                    <small class="form-text text-muted" id="valueHelp"></small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="expiry_date">Expiry Date</label>
+                                    <input type="date" class="form-control bg-dark text-light" id="expiry_date" name="expiry_date">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="description">Description</label>
+                                    <input type="text" class="form-control bg-dark text-light" id="description" name="description">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-md-12">
+                                <!-- Block ICMP Traffic checkbox removed -->
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-shield-alt"></i> Add to Blacklist
+                            </button>
+                            <button type="reset" class="btn btn-outline-light ms-2">
+                                <i class="fas fa-undo"></i> Reset
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            {% if show_table %}
+
+
+            <!-- IP Blacklist Table -->
+            <div class="card bg-dark text-light mb-4" id="ipTableCard">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4><i class="fas fa-ban"></i> Blacklisted IP Addresses</h4>
+                    <span class="badge bg-danger" id="ipCount">{{ ip_entries|length }}</span>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-dark table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>IP Address</th>
+                                    <th>Description</th>
+                                    <th>Added Date</th>
+                                    <th>Expiry Date</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for entry in ip_entries %}
+                                <tr>
+                                    <td>
+                                        <span class="text-danger">{{ entry.value }}</span>
+                                    </td>
+                                    <td>{{ entry.description }}</td>
+                                    <td>{{ entry.added_date }}</td>
+                                    <td>{{ entry.expiry_date }}</td>
+                                    <td>
+                                        {% set expired = entry.expiry_date and entry.expiry_date < now %}
+                                        <span class="badge {% if expired %}bg-danger{% else %}bg-success{% endif %}">
+                                            {{ 'Expired' if expired else 'Active' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <button class="btn btn-sm btn-danger delete-entry" 
+                                                    data-type="ip" 
+                                                    data-value="{{ entry.value }}">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="6" class="text-center">No blacklisted IP addresses</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Port Blacklist Table -->
+            <div class="card bg-dark text-light" id="portTableCard">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4><i class="fas fa-plug"></i> Blacklisted Ports</h4>
+                    <span class="badge bg-danger" id="portCount">{{ port_entries|length }}</span>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-dark table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Port</th>
+                                    <th>Description</th>
+                                    <th>Added Date</th>
+                                    <th>Expiry Date</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for entry in port_entries %}
+                                <tr>
+                                    <td>
+                                        <span class="text-danger">{{ entry.value }}</span>
+                                    </td>
+                                    <td>{{ entry.description }}</td>
+                                    <td>{{ entry.added_date }}</td>
+                                    <td>{{ entry.expiry_date }}</td>
+                                    <td>
+                                        {% set expired = entry.expiry_date and entry.expiry_date < now %}
+                                        <span class="badge {% if expired %}bg-danger{% else %}bg-success{% endif %}">
+                                            {{ 'Expired' if expired else 'Active' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <button class="btn btn-sm btn-danger delete-entry" 
+                                                    data-type="port" 
+                                                    data-value="{{ entry.value }}">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="6" class="text-center">No blacklisted ports</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Modal -->
+<div class="modal fade" id="statsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content bg-dark text-light">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title">
+                    <i class="fas fa-chart-pie me-2"></i>
+                    Blacklist Statistics
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-4">
+                    <!-- IP Statistics Card -->
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center mb-3">
+                                    <i class="fas fa-network-wired text-danger me-2"></i>
+                                    <h5 class="card-title mb-0">IP Statistics</h5>
+                                </div>
+                                <div class="stats-list">
+                                    <div class="stat-item d-flex justify-content-between align-items-center mb-2">
+                                        <span>Total IPs:</span>
+                                        <span class="badge bg-secondary" id="totalIPs">{{ ip_entries|length }}</span>
+                                    </div>
+                                    <div class="stat-item d-flex justify-content-between align-items-center mb-2">
+                                        <span>Active:</span>
+                                        <span class="badge bg-success" id="activeIPs">0</span>
+                                    </div>
+                                    <div class="stat-item d-flex justify-content-between align-items-center">
+                                        <span>Expired:</span>
+                                        <span class="badge bg-danger" id="expiredIPs">0</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Port Statistics Card -->
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center mb-3">
+                                    <i class="fas fa-plug text-primary me-2"></i>
+                                    <h5 class="card-title mb-0">Port Statistics</h5>
+                                </div>
+                                <div class="stats-list">
+                                    <div class="stat-item d-flex justify-content-between align-items-center mb-2">
+                                        <span>Total Ports:</span>
+                                        <span class="badge bg-secondary" id="totalPorts">{{ port_entries|length }}</span>
+                                    </div>
+                                    <div class="stat-item d-flex justify-content-between align-items-center mb-2">
+                                        <span>Active:</span>
+                                        <span class="badge bg-success" id="activePorts">0</span>
+                                    </div>
+                                    <div class="stat-item d-flex justify-content-between align-items-center">
+                                        <span>Expired:</span>
+                                        <span class="badge bg-danger" id="expiredPorts">0</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-secondary">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.stats-list {
+    padding: 0.5rem;
+    background: var(--dark-800);
+    border-radius: 8px;
+}
+
+.stat-item {
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    transition: background-color 0.2s ease;
+}
+
+.stat-item:hover {
+    background: var(--dark-600);
+}
+
+.stat-item .badge {
+    min-width: 48px;
+    padding: 0.5rem 0.75rem;
+}
+
+#statsModal .modal-content {
+    border: 1px solid var(--dark-600);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+#statsModal .card {
+    transition: transform 0.2s ease;
+    border: 1px solid var(--dark-600);
+}
+
+#statsModal .card:hover {
+    transform: translateY(-2px);
+}
+</style>
+
+<script>
+// Export rules to JSON - moved outside DOMContentLoaded
+function exportRules() {
+    fetch('{{ url_for("get_blacklist_rules") }}')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to fetch blacklist rules');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            
+            // Format the data for better readability
+            const exportData = {
+                export_date: new Date().toISOString(),
+                blacklist_rules: data
+            };
+            
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `blacklist_rules_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            
+            showSuccess('Blacklist rules exported successfully!');
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showError(error.message || 'Failed to export rules');
+        });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    });
+
+    // Handle form submission
+    const form = document.getElementById('blacklistForm');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(form);
+            
+            fetch('{{ url_for("blacklist") }}', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showSuccess(data.message);
+                    location.reload();
+                } else {
+                    showError(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showError('An error occurred while processing your request.');
+            });
+        });
+    }
+
+    // Handle delete buttons
+    const deleteButtons = document.querySelectorAll('.delete-entry');
+    deleteButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const type = this.dataset.type;
+            const value = this.dataset.value;
+            
+            if (confirm(`Are you sure you want to remove this ${type}?`)) {
+                fetch(`/delete_blacklist/${type}/${value}`, {
+                    method: 'POST'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showSuccess(data.message);
+                        location.reload();
+                    } else {
+                        showError(data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showError('An error occurred while processing your request.');
+                });
+            }
+        });
+    });
+
+    // Entry type change handler
+    const entryType = document.getElementById('entry_type');
+    const valueHelp = document.getElementById('valueHelp');
+    const valueInput = document.getElementById('value');
+
+    entryType.addEventListener('change', function() {
+        if (this.value === 'ip') {
+            valueHelp.textContent = 'Enter a valid IP address (e.g., 192.168.1.1)';
+            valueInput.pattern = '^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$';
+        } else {
+            valueHelp.textContent = 'Enter a port number (1-65535)';
+            valueInput.pattern = '^([1-9][0-9]{0,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$';
+        }
+    });
+
+    // Trigger change event to set initial help text
+    entryType.dispatchEvent(new Event('change'));
+
+    // Filter functionality
+    const filterType = document.getElementById('filterType');
+    const searchInput = document.getElementById('searchInput');
+    const sortBy = document.getElementById('sortBy');
+    const ipTableCard = document.getElementById('ipTableCard');
+    const portTableCard = document.getElementById('portTableCard');
+
+    function applyFilters() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const selectedType = filterType.value;
+
+        // Show/hide tables based on filter
+        if (selectedType === 'all' || selectedType === 'ip') {
+            ipTableCard.style.display = 'block';
+        } else {
+            ipTableCard.style.display = 'none';
+        }
+
+        if (selectedType === 'all' || selectedType === 'port') {
+            portTableCard.style.display = 'block';
+        } else {
+            portTableCard.style.display = 'none';
+        }
+
+        // Filter table rows
+        const tables = document.querySelectorAll('.table');
+        tables.forEach(table => {
+            const rows = table.querySelectorAll('tbody tr');
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    }
+
+    filterType.addEventListener('change', applyFilters);
+    searchInput.addEventListener('input', applyFilters);
+    sortBy.addEventListener('change', applyFilters);
+
+    // Show statistics modal
+    function showStats() {
+        fetch('/get_blacklist_stats')
+            .then(response => response.json())
+            .then(data => {
+                // Update IP statistics
+                document.getElementById('activeIPs').textContent = data.ip_stats.active;
+                document.getElementById('expiredIPs').textContent = data.ip_stats.expired;
+                
+                // Update Port statistics
+                document.getElementById('activePorts').textContent = data.port_stats.active;
+                document.getElementById('expiredPorts').textContent = data.port_stats.expired;
+                
+                // Show the modal
+                const statsModal = new bootstrap.Modal(document.getElementById('statsModal'));
+                statsModal.show();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showError('Failed to load blacklist statistics');
+            });
+    }
+
+    // Edit entry function
+    function editEntry(type, value) {
+        // Populate form with entry data
+        document.getElementById('entry_type').value = type;
+        document.getElementById('value').value = value;
+        
+        // Scroll to form
+        document.getElementById('addEntryForm').scrollIntoView({ behavior: 'smooth' });
+    }
+});
+
+// Toggle form visibility
+function toggleForm() {
+    const form = document.getElementById('addEntryForm');
+    const icon = document.getElementById('formToggleIcon');
+    
+    if (form.style.display === 'none') {
+        form.style.display = 'block';
+        icon.className = 'fas fa-chevron-up';
+    } else {
+        form.style.display = 'none';
+        icon.className = 'fas fa-chevron-down';
+    }
+}
+</script>
+{% endblock %} 

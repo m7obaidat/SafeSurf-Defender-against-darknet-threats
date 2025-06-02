@@ -1,0 +1,290 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card bg-dark text-light">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h2><i class="fas fa-history"></i> Blacklist Activity Logs</h2>
+                    <div class="btn-group">
+                        <button id="clearLogs" class="btn btn-danger">
+                            <i class="fas fa-trash"></i> Clear Logs
+                        </button>
+                        <button class="btn btn-outline-light ms-2" onclick="exportLogs()">
+                            <i class="fas fa-download"></i> Export Logs
+                        </button>
+                        <a href="{{ url_for('view_blacklist') }}" class="btn btn-outline-light ms-2">
+                            <i class="fas fa-shield-alt"></i> Back to Blacklist
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Filter Controls -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label for="filterAction">Filter by Action</label>
+                                <select class="form-control bg-dark text-light" id="filterAction">
+                                    <option value="all">All Actions</option>
+                                    <option value="added">Added</option>
+                                    <option value="removed">Removed</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label for="filterType">Filter by Type</label>
+                                <select class="form-control bg-dark text-light" id="filterType">
+                                    <option value="all">All Types</option>
+                                    <option value="ip">IP</option>
+                                    <option value="port">Port</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="searchInput">Search</label>
+                                <input type="text" class="form-control bg-dark text-light" id="searchInput" 
+                                       placeholder="Search logs...">
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <label for="entriesPerPage">Show</label>
+                                <select class="form-control bg-dark text-light" id="entriesPerPage">
+                                    <option value="10">10</option>
+                                    <option value="25">25</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-dark table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Timestamp <i class="fas fa-sort"></i></th>
+                                    <th>Type <i class="fas fa-sort"></i></th>
+                                    <th>Value <i class="fas fa-sort"></i></th>
+                                    <th>Action</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for log in logs %}
+                                <tr>
+                                    <td>{{ log.timestamp }}</td>
+                                    <td>
+                                        <span class="badge {% if log.type == 'ip' %}bg-primary{% else %}bg-info{% endif %}">
+                                            {{ log.type|upper }}
+                                        </span>
+                                    </td>
+                                    <td>{{ log.value }}</td>
+                                    <td>
+                                        <span class="badge {% if log.action == 'added' %}bg-success{% else %}bg-danger{% endif %}">
+                                            {{ log.action|title }}
+                                        </span>
+                                    </td>
+                                    <td>{{ log.description }}</td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center">No logs available</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <div class="text-muted">
+                            Showing <span id="showingStart">1</span> to <span id="showingEnd">10</span> of <span id="totalEntries">{{ logs|length }}</span> entries
+                        </div>
+                        <nav aria-label="Table navigation">
+                            <ul class="pagination justify-content-end mb-0">
+                                <li class="page-item disabled">
+                                    <a class="page-link bg-dark text-light" href="#" tabindex="-1">Previous</a>
+                                </li>
+                                <li class="page-item active">
+                                    <a class="page-link bg-danger border-danger" href="#">1</a>
+                                </li>
+                                <li class="page-item disabled">
+                                    <a class="page-link bg-dark text-light" href="#">Next</a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const table = document.querySelector('table');
+    const filterAction = document.getElementById('filterAction');
+    const filterType = document.getElementById('filterType');
+    const searchInput = document.getElementById('searchInput');
+    const entriesPerPage = document.getElementById('entriesPerPage');
+    let currentPage = 1;
+
+    // Filter functionality
+    function applyFilters() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const selectedAction = filterAction.value;
+        const selectedType = filterType.value;
+        const rows = table.querySelectorAll('tbody tr');
+        let visibleRows = 0;
+
+        rows.forEach(row => {
+            const action = row.querySelector('td:nth-child(4)').textContent.toLowerCase();
+            const type = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+            const text = row.textContent.toLowerCase();
+            
+            const actionMatch = selectedAction === 'all' || action.includes(selectedAction);
+            const typeMatch = selectedType === 'all' || type.includes(selectedType);
+            const searchMatch = text.includes(searchTerm);
+
+            if (actionMatch && typeMatch && searchMatch) {
+                row.style.display = '';
+                visibleRows++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        updatePagination(visibleRows);
+    }
+
+    // Sorting functionality
+    document.querySelectorAll('th').forEach(header => {
+        header.style.cursor = 'pointer';
+        header.addEventListener('click', () => {
+            const index = Array.from(header.parentNode.children).indexOf(header);
+            sortTable(index);
+        });
+    });
+
+    function sortTable(column) {
+        const rows = Array.from(table.querySelectorAll('tbody tr'));
+        const direction = header.classList.contains('asc') ? -1 : 1;
+        
+        rows.sort((a, b) => {
+            const aValue = a.children[column].textContent;
+            const bValue = b.children[column].textContent;
+            return aValue.localeCompare(bValue) * direction;
+        });
+
+        header.classList.toggle('asc');
+        rows.forEach(row => table.querySelector('tbody').appendChild(row));
+    }
+
+    // Pagination functionality
+    function updatePagination(totalRows) {
+        const perPage = parseInt(entriesPerPage.value);
+        const totalPages = Math.ceil(totalRows / perPage);
+        const start = (currentPage - 1) * perPage + 1;
+        const end = Math.min(start + perPage - 1, totalRows);
+
+        document.getElementById('showingStart').textContent = start;
+        document.getElementById('showingEnd').textContent = end;
+        document.getElementById('totalEntries').textContent = totalRows;
+
+        // Update pagination buttons
+        const pagination = document.querySelector('.pagination');
+        pagination.innerHTML = '';
+
+        // Previous button
+        pagination.appendChild(createPageItem('Previous', currentPage > 1, currentPage - 1));
+
+        // Page numbers
+        for (let i = 1; i <= totalPages; i++) {
+            pagination.appendChild(createPageItem(i, true, i, i === currentPage));
+        }
+
+        // Next button
+        pagination.appendChild(createPageItem('Next', currentPage < totalPages, currentPage + 1));
+    }
+
+    function createPageItem(text, enabled, page, active = false) {
+        const li = document.createElement('li');
+        li.className = `page-item ${!enabled ? 'disabled' : ''} ${active ? 'active' : ''}`;
+        
+        const a = document.createElement('a');
+        a.className = `page-link bg-dark text-light ${active ? 'bg-danger border-danger' : ''}`;
+        a.href = '#';
+        a.textContent = text;
+        
+        if (enabled) {
+            a.addEventListener('click', (e) => {
+                e.preventDefault();
+                currentPage = page;
+                applyFilters();
+            });
+        }
+        
+        li.appendChild(a);
+        return li;
+    }
+
+    // Clear logs functionality
+    document.getElementById('clearLogs').addEventListener('click', function() {
+        if (confirm('Are you sure you want to clear all logs? This action cannot be undone.')) {
+            fetch('{{ url_for("clear_blacklist_logs") }}', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showSuccess(data.message);
+                    location.reload();
+                } else {
+                    showError(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showError('An error occurred while processing your request.');
+            });
+        }
+    });
+
+    // Export logs functionality
+    window.exportLogs = function() {
+        const rows = Array.from(table.querySelectorAll('tbody tr'))
+            .filter(row => row.style.display !== 'none')
+            .map(row => ({
+                timestamp: row.cells[0].textContent,
+                type: row.cells[1].textContent.trim(),
+                value: row.cells[2].textContent,
+                action: row.cells[3].textContent.trim(),
+                description: row.cells[4].textContent
+            }));
+
+        const blob = new Blob([JSON.stringify(rows, null, 2)], { type: 'application/json' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `blacklist_logs_${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+    };
+
+    // Add event listeners
+    filterAction.addEventListener('change', applyFilters);
+    filterType.addEventListener('change', applyFilters);
+    searchInput.addEventListener('input', applyFilters);
+    entriesPerPage.addEventListener('change', applyFilters);
+
+    // Initial filter application
+    applyFilters();
+});
+</script>
+{% endblock %} 

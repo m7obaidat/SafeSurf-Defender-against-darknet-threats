@@ -2,7 +2,7 @@
 Authors: Mohammad Jihad Obaidat, Ibrahim Ahmad Al-Syouf, Yahia Faek Awawdeh, Anas Eid Masa’deh
 Supervisor: Dr. Qasem Abu Al-Haija
 Institution: Jordan University of Science and Technology (JUST)
-Date: January 2025
+Date: Jun 2025
 
 # Overview
 SafeSurf is an intelligent Intrusion Prevention System (IPS) designed to detect and block darknet-related threats in real-time using advanced supervised machine learning models. The system leverages a hierarchical classification approach to analyze network traffic and distinguish darknet types, behaviors, and threats with high accuracy and low latency.

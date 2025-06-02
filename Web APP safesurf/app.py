@@ -200,16 +200,16 @@ class RedisHandler:
 
 # Initialize Redis handler
 redis_handler = RedisHandler(
-    host='128.85.32.123',
-    port=6379,
-    username='safesurf',
-    password='MIAY$003'
+    host='<Redis IP>',
+    port=<port>,
+    username='username',
+    password='password'
 )
 
 # AWS Configuration
-aws_access_key = 'AKIAQ4NXP4LLNOFXZ6HF'
-aws_secret_key = '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'
-topic_arn = 'arn:aws:sns:us-east-1:061051232982:email-iot-sec'
+aws_access_key = 'aws_access_key'
+aws_secret_key = 'aws_secret_key'
+topic_arn = 'topic_arn'
 
 # Initialize SNS client
 sns_client = boto3.client(

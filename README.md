@@ -74,6 +74,7 @@ This project is an academic prototype and currently not licensed for commercial 
 For more information or collaboration:
 
 Dr. Qasem Abu Al-Haija (Supervisor) https://www.linkedin.com/in/qasem-abu-al-haija-190a123b/
+
 Mohammad Obaidat: https://www.linkedin.com/in/mobaidat75/
 
 Anas Masa'deh: https://www.linkedin.com/in/anas-masadeh-58a212288/

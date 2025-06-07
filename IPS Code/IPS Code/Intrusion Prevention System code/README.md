@@ -76,12 +76,6 @@ pip install -r requirements.txt
 sudo python3 run.py
 ```
 
-### Converting PCAP to CSV
-
-To convert PCAP files to CSV format for analysis:
-```bash
-python3 PCAP-TO-CSV.py <input_pcap_file> <output_csv_file>
-```
 
 ## Features and Capabilities
 

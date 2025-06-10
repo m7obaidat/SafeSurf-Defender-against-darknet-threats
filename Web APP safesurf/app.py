@@ -200,16 +200,16 @@ class RedisHandler:
 
 # Initialize Redis handler
 redis_handler = RedisHandler(
-    host='<Redis IP>',
-    port=<port>,
-    username='username',
-    password='password'
+    host='128.85.32.123',
+    port=6379,
+    username='safesurf',
+    password='MIAY$003'
 )
 
 # AWS Configuration
-aws_access_key = 'aws_access_key'
-aws_secret_key = 'aws_secret_key'
-topic_arn = 'topic_arn'
+aws_access_key = 'AKIAQ4NXP4LLNOFXZ6HF'
+aws_secret_key = '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'
+topic_arn = 'arn:aws:sns:us-east-1:061051232982:email-iot-sec'
 
 # Initialize SNS client
 sns_client = boto3.client(
@@ -1468,6 +1468,8 @@ def generate_report():
         try:
             start_date = datetime.strptime(data['startDate'], '%Y-%m-%d')
             end_date = datetime.strptime(data['endDate'], '%Y-%m-%d')
+            # Set end_date to end of day
+            end_date = end_date.replace(hour=23, minute=59, second=59)
         except (KeyError, ValueError) as e:
             return jsonify({'error': 'Invalid date format'}), 400
 
@@ -1479,8 +1481,27 @@ def generate_report():
         pdf.alias_nb_pages()
         pdf.add_page()
 
-        # Load stats once
+        # Load stats
         stats = load_or_initialize_stats()
+
+        # Filter flows by date range
+        filtered_flows = [
+            flow for flow in stats['flows']
+            if start_date <= datetime.strptime(flow['timestamp'], '%Y-%m-%d %H:%M:%S') <= end_date
+        ]
+
+        # Calculate filtered stats
+        filtered_stats = {
+            'normal_count': sum(1 for flow in filtered_flows if flow['label'] == 'Normal'),
+            'darknet_count': sum(1 for flow in filtered_flows if flow['label'] == 'Darknet'),
+            'layer2_counters': {
+                'Tor': sum(1 for flow in filtered_flows if flow['label_2'] == 'Tor'),
+                'VPN': sum(1 for flow in filtered_flows if flow['label_2'] == 'VPN'),
+                'I2P': sum(1 for flow in filtered_flows if flow['label_2'] == 'I2P'),
+                'Freenet': sum(1 for flow in filtered_flows if flow['label_2'] == 'Freenet'),
+                'Zeronet': sum(1 for flow in filtered_flows if flow['label_2'] == 'Zeronet')
+            }
+        }
 
         # Add date range info
         pdf.set_font('Arial', '', 12)
@@ -1491,9 +1512,9 @@ def generate_report():
         # Traffic Overview Section
         pdf.chapter_title('Traffic Overview')
         stats_layout = [
-            ('Normal Traffic', stats['normal_count']),
-            ('Darknet Traffic', stats['darknet_count']),
-            ('Total Traffic', stats['normal_count'] + stats['darknet_count'])
+            ('Normal Traffic', filtered_stats['normal_count']),
+            ('Darknet Traffic', filtered_stats['darknet_count']),
+            ('Total Traffic', filtered_stats['normal_count'] + filtered_stats['darknet_count'])
         ]
         
         x_start = 10
@@ -1513,30 +1534,34 @@ def generate_report():
             if blacklist_data:
                 blacklist = json.loads(blacklist_data)
                 
-                # Count active and expired entries
+                # Count active and expired entries within date range
                 now = datetime.now()
                 ip_stats = {'active': 0, 'expired': 0}
                 port_stats = {'active': 0, 'expired': 0}
                 
                 for ip, data in blacklist.get('ips', {}).items():
-                    if data.get('expiry_date'):
-                        expiry = datetime.strptime(data['expiry_date'], '%Y-%m-%d')
-                        if expiry > now:
-                            ip_stats['active'] += 1
+                    added_date = datetime.strptime(data.get('added_date', now.isoformat()), '%Y-%m-%dT%H:%M:%S.%f')
+                    if start_date <= added_date <= end_date:
+                        if data.get('expiry_date'):
+                            expiry = datetime.strptime(data['expiry_date'], '%Y-%m-%d')
+                            if expiry > now:
+                                ip_stats['active'] += 1
+                            else:
+                                ip_stats['expired'] += 1
                         else:
-                            ip_stats['expired'] += 1
-                    else:
-                        ip_stats['active'] += 1
+                            ip_stats['active'] += 1
                 
                 for port, data in blacklist.get('ports', {}).items():
-                    if data.get('expiry_date'):
-                        expiry = datetime.strptime(data['expiry_date'], '%Y-%m-%d')
-                        if expiry > now:
-                            port_stats['active'] += 1
+                    added_date = datetime.strptime(data.get('added_date', now.isoformat()), '%Y-%m-%dT%H:%M:%S.%f')
+                    if start_date <= added_date <= end_date:
+                        if data.get('expiry_date'):
+                            expiry = datetime.strptime(data['expiry_date'], '%Y-%m-%d')
+                            if expiry > now:
+                                port_stats['active'] += 1
+                            else:
+                                port_stats['expired'] += 1
                         else:
-                            port_stats['expired'] += 1
-                    else:
-                        port_stats['active'] += 1
+                            port_stats['active'] += 1
                 
                 blacklist_stats = [
                     ('Active IPs', ip_stats['active']),
@@ -1566,11 +1591,11 @@ def generate_report():
         # Network Activity Section
         pdf.chapter_title('Network Activity')
         layer2_stats = [
-            ('Tor', stats['layer2_counters']['Tor']),
-            ('VPN', stats['layer2_counters']['VPN']),
-            ('I2P', stats['layer2_counters']['I2P']),
-            ('Freenet', stats['layer2_counters']['Freenet']),
-            ('Zeronet', stats['layer2_counters']['Zeronet'])
+            ('Tor', filtered_stats['layer2_counters']['Tor']),
+            ('VPN', filtered_stats['layer2_counters']['VPN']),
+            ('I2P', filtered_stats['layer2_counters']['I2P']),
+            ('Freenet', filtered_stats['layer2_counters']['Freenet']),
+            ('Zeronet', filtered_stats['layer2_counters']['Zeronet'])
         ]
         
         y = pdf.get_y() + 5
